@@ -21,6 +21,8 @@ actor {
 
   var nextRegistrationId = 0;
   let registrations = Map.empty<Nat, Registration.Registration>();
+  // Track used admission numbers for uniqueness check
+  let admissionNumbers = Map.empty<Text, Nat>();
 
   public type RegistrationInput = {
     game : Text;
@@ -72,6 +74,14 @@ actor {
 
   // Registration Management
   public shared func submitRegistration(input : RegistrationInput) : async Nat {
+    // Check for duplicate admission number
+    switch (admissionNumbers.get(input.admissionNumber)) {
+      case (?_) {
+        Runtime.trap("DUPLICATE_ADMISSION: This admission number is already registered.");
+      };
+      case null {};
+    };
+
     let registration : Registration.Registration = {
       input with
       id = nextRegistrationId;
@@ -79,6 +89,7 @@ actor {
     };
 
     registrations.add(nextRegistrationId, registration);
+    admissionNumbers.add(input.admissionNumber, nextRegistrationId);
     nextRegistrationId += 1;
     registration.id;
   };
@@ -91,6 +102,26 @@ actor {
   public query func getRegistrations() : async [Registration.Registration] {
     let arr = registrations.values().toArray();
     arr.sort();
+  };
+
+  // Look up a single registration by admission number (for player self-check)
+  public query func getRegistrationByAdmissionNumber(admissionNumber : Text) : async ?Registration.Registration {
+    switch (admissionNumbers.get(admissionNumber)) {
+      case (?id) { registrations.get(id) };
+      case null { null };
+    };
+  };
+
+  // Delete a registration by ID (admin only, password checked on frontend)
+  public shared func deleteRegistration(id : Nat) : async Bool {
+    switch (registrations.get(id)) {
+      case (?reg) {
+        ignore registrations.remove(id);
+        ignore admissionNumbers.remove(reg.admissionNumber);
+        true;
+      };
+      case null { false };
+    };
   };
 
   // Invite Links and RSVP System

@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Search,
   Shield,
+  Trash2,
   Trophy,
   Users,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Registration } from "../backend.d";
+import { useActor } from "../hooks/useActor";
 import {
   useGetRegistrationCount,
   useGetRegistrations,
@@ -108,7 +110,6 @@ function exportToCsv(registrations: Registration[]) {
     "Food Preference",
     "Submitted Date",
   ];
-
   const rows = registrations.map((r) => {
     const dob = formatDate(r.dobDate, r.dobMonth, r.dobYear);
     const submittedDate = new Date(
@@ -134,11 +135,9 @@ function exportToCsv(registrations: Registration[]) {
       submittedDate,
     ].map(escapeCsvField);
   });
-
   const csvContent = [headers.map(escapeCsvField), ...rows]
     .map((row) => row.join(","))
     .join("\n");
-
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const today = new Date().toISOString().slice(0, 10);
@@ -157,7 +156,9 @@ export default function AdminDashboard({ onBack }: Props) {
   const [loginError, setLoginError] = useState("");
   const [selected, setSelected] = useState<Registration | null>(null);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<bigint | null>(null);
 
+  const { actor } = useActor();
   const {
     data: registrations,
     isLoading: regLoading,
@@ -185,6 +186,30 @@ export default function AdminDashboard({ onBack }: Props) {
     toast.success(`Exported ${data.length} registration(s) to CSV`);
   };
 
+  const handleDelete = async (e: React.MouseEvent, reg: Registration) => {
+    e.stopPropagation();
+    if (
+      !confirm(
+        `Delete registration for ${reg.studentName} (${reg.admissionNumber})? This cannot be undone.`,
+      )
+    )
+      return;
+    if (!actor) {
+      toast.error("Not connected to backend. Please try again.");
+      return;
+    }
+    setDeletingId(reg.id);
+    try {
+      await (actor as any).deleteRegistration(reg.id);
+      toast.success(`Registration for ${reg.studentName} deleted`);
+      refetch();
+    } catch {
+      toast.error("Failed to delete registration");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filtered = (registrations ?? []).filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -196,14 +221,11 @@ export default function AdminDashboard({ onBack }: Props) {
     );
   });
 
-  // Group by game (case-insensitive), sorted alphabetically by game name
   const gameGroups: { gameName: string; rows: Registration[] }[] = [];
   const gameMap = new Map<string, { gameName: string; rows: Registration[] }>();
   for (const r of filtered) {
     const key = r.game.toLowerCase();
-    if (!gameMap.has(key)) {
-      gameMap.set(key, { gameName: r.game, rows: [] });
-    }
+    if (!gameMap.has(key)) gameMap.set(key, { gameName: r.game, rows: [] });
     gameMap.get(key)!.rows.push(r);
   }
   for (const entry of gameMap.values()) {
@@ -212,12 +234,10 @@ export default function AdminDashboard({ onBack }: Props) {
   }
   gameGroups.sort((a, b) => a.gameName.localeCompare(b.gameName));
 
-  // Flattened index for deterministic row markers
   let rowCounter = 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
       <header className="bg-card shadow-xs sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -274,7 +294,6 @@ export default function AdminDashboard({ onBack }: Props) {
                   Enter your credentials to continue
                 </p>
               </div>
-
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label
@@ -293,7 +312,6 @@ export default function AdminDashboard({ onBack }: Props) {
                     data-ocid="admin.input"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <Label
                     htmlFor="password"
@@ -325,13 +343,11 @@ export default function AdminDashboard({ onBack }: Props) {
                     </button>
                   </div>
                 </div>
-
                 {loginError && (
                   <p className="text-sm text-destructive font-medium">
                     {loginError}
                   </p>
                 )}
-
                 <Button
                   type="submit"
                   className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest"
@@ -349,7 +365,6 @@ export default function AdminDashboard({ onBack }: Props) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {/* Stats */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
               <div className="flex items-center gap-4">
                 <div className="bg-card rounded-xl shadow-card px-6 py-4 flex items-center gap-3">
@@ -389,7 +404,6 @@ export default function AdminDashboard({ onBack }: Props) {
               </div>
             </div>
 
-            {/* Search */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -401,7 +415,6 @@ export default function AdminDashboard({ onBack }: Props) {
               />
             </div>
 
-            {/* Table */}
             <div className="bg-card rounded-2xl shadow-card overflow-hidden">
               {regLoading ? (
                 <div className="p-6 space-y-3" data-ocid="admin.loading_state">
@@ -455,7 +468,6 @@ export default function AdminDashboard({ onBack }: Props) {
                   <TableBody>
                     {gameGroups.map((group) => (
                       <>
-                        {/* Game group header */}
                         <TableRow key={`group-${group.gameName}`}>
                           <TableCell
                             colSpan={9}
@@ -466,7 +478,6 @@ export default function AdminDashboard({ onBack }: Props) {
                             {group.rows.length !== 1 ? "s" : ""}
                           </TableCell>
                         </TableRow>
-                        {/* Rows for this game */}
                         {group.rows.map((reg) => {
                           rowCounter += 1;
                           const idx = rowCounter;
@@ -521,6 +532,17 @@ export default function AdminDashboard({ onBack }: Props) {
                                 >
                                   View
                                 </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:text-destructive/80 text-xs font-bold uppercase ml-1"
+                                  onClick={(e) => handleDelete(e, reg)}
+                                  disabled={deletingId === reg.id}
+                                  data-ocid="admin.delete_button"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  {deletingId === reg.id ? "..." : "Del"}
+                                </Button>
                               </TableCell>
                             </TableRow>
                           );
@@ -535,7 +557,6 @@ export default function AdminDashboard({ onBack }: Props) {
         )}
       </main>
 
-      {/* Detail Modal */}
       <Dialog
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}

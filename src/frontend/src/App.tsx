@@ -1,10 +1,11 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
 import AdminDashboard from "./pages/AdminDashboard";
+import CheckDetailsPage from "./pages/CheckDetailsPage";
 import RegistrationPage from "./pages/RegistrationPage";
 import SuccessPage from "./pages/SuccessPage";
 
-export type Page = "home" | "success" | "admin";
+export type Page = "home" | "success" | "admin" | "check";
 
 export default function App() {
   const [page, setPage] = useState<Page>(() => {
@@ -20,6 +21,8 @@ export default function App() {
       window.location.hash = "#admin";
     } else if (p === "home") {
       window.location.hash = "#home";
+    } else if (p === "check") {
+      window.location.hash = "#check";
     }
   };
 
@@ -34,6 +37,7 @@ export default function App() {
         <RegistrationPage
           onSuccess={handleSuccess}
           onAdminClick={() => navigate("admin")}
+          onCheckDetailsClick={() => navigate("check")}
         />
       )}
       {page === "success" && (
@@ -41,9 +45,11 @@ export default function App() {
           registrationId={registrationId!}
           onRegisterAnother={() => navigate("home")}
           onAdminClick={() => navigate("admin")}
+          onCheckDetailsClick={() => navigate("check")}
         />
       )}
       {page === "admin" && <AdminDashboard onBack={() => navigate("home")} />}
+      {page === "check" && <CheckDetailsPage onBack={() => navigate("home")} />}
       <Toaster />
     </>
   );

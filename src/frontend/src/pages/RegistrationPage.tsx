@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Loader2,
   Phone,
+  Search,
   Shield,
   Shirt,
   Trophy,
@@ -29,6 +30,7 @@ import { useSubmitRegistration } from "../hooks/useQueries";
 interface Props {
   onSuccess: (id: bigint) => void;
   onAdminClick: () => void;
+  onCheckDetailsClick: () => void;
 }
 
 const MONTHS = [
@@ -46,7 +48,20 @@ const MONTHS = [
   "December",
 ];
 
-const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+const CLOTHING_SIZES = [
+  "24",
+  "26",
+  "28",
+  "30",
+  "32",
+  "34",
+  "36",
+  "38",
+  "40",
+  "42",
+  "44",
+  "46",
+];
 const AGE_GROUPS = ["U14", "U17", "U19"];
 const CLASSES = [
   "Class 1",
@@ -153,7 +168,11 @@ function ErrorMsg({ msg }: { msg?: string }) {
   );
 }
 
-export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
+export default function RegistrationPage({
+  onSuccess,
+  onAdminClick,
+  onCheckDetailsClick,
+}: Props) {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const { mutateAsync, isPending } = useSubmitRegistration();
@@ -199,8 +218,19 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
         food: form.food,
       });
       onSuccess(id);
-    } catch {
-      toast.error("Submission failed. Please try again.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("DUPLICATE_ADMISSION")) {
+        setErrors((prev) => ({
+          ...prev,
+          admissionNumber: "This admission number is already registered.",
+        }));
+        toast.error("This admission number is already registered.");
+        const el = document.getElementById("admissionNumber");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        toast.error("Submission failed. Please try again.");
+      }
     }
   };
 
@@ -214,7 +244,7 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
               <Trophy className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-lg text-foreground tracking-tight">
-              Sports Academy
+              PM SHRI KENDRIYA VIDYALAYA ARTY CENTRE NASHIK
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
@@ -234,6 +264,14 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
             </a>
             <button
               type="button"
+              onClick={onCheckDetailsClick}
+              className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-primary transition-colors"
+              data-ocid="nav.link"
+            >
+              Check Details
+            </button>
+            <button
+              type="button"
               onClick={onAdminClick}
               className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-primary transition-colors"
               data-ocid="nav.admin_link"
@@ -241,15 +279,26 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
               Admin Dashboard
             </button>
           </nav>
-          <Button
-            onClick={onAdminClick}
-            variant="default"
-            className="rounded-full bg-primary text-primary-foreground uppercase text-xs font-bold tracking-wider"
-            data-ocid="admin.open_modal_button"
-          >
-            <Shield className="w-4 h-4 mr-1" />
-            Admin
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={onCheckDetailsClick}
+              variant="outline"
+              className="rounded-full uppercase text-xs font-bold tracking-wider hidden sm:flex"
+              data-ocid="check.open_modal_button"
+            >
+              <Search className="w-4 h-4 mr-1" />
+              Check Details
+            </Button>
+            <Button
+              onClick={onAdminClick}
+              variant="default"
+              className="rounded-full bg-primary text-primary-foreground uppercase text-xs font-bold tracking-wider"
+              data-ocid="admin.open_modal_button"
+            >
+              <Shield className="w-4 h-4 mr-1" />
+              Admin
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -267,7 +316,7 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
             transition={{ duration: 0.6 }}
             className="text-3xl md:text-5xl font-bold text-white leading-tight"
           >
-            Annual Sports Registration
+            CLUSTER AND REGIONAL REGISTRATION FORM
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -278,6 +327,22 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
             Register your participation in the school sports event. Fill in all
             details carefully.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-5"
+          >
+            <Button
+              onClick={onCheckDetailsClick}
+              variant="outline"
+              className="rounded-full bg-white/20 border-white/40 text-white hover:bg-white/30 font-bold uppercase tracking-wider text-sm backdrop-blur-sm"
+              data-ocid="check.secondary_button"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Check My Registration Details
+            </Button>
+          </motion.div>
         </div>
       </section>
 
@@ -290,7 +355,7 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
           className="max-w-4xl mx-auto"
         >
           <h2 className="text-center text-xl md:text-2xl font-bold uppercase tracking-widest text-foreground mb-8">
-            Student Sports Registration Form
+            Student Registration Form
           </h2>
 
           <form onSubmit={handleSubmit} noValidate>
@@ -504,14 +569,14 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
                     className="flex gap-6 mt-1"
                     data-ocid="form.radio"
                   >
-                    {["Male", "Female", "Other"].map((g) => (
+                    {["B", "G"].map((g) => (
                       <div key={g} className="flex items-center gap-2">
                         <RadioGroupItem value={g} id={`gender-${g}`} />
                         <Label
                           htmlFor={`gender-${g}`}
                           className="cursor-pointer font-medium text-sm"
                         >
-                          {g}
+                          {g === "B" ? "Boy (B)" : "Girl (G)"}
                         </Label>
                       </div>
                     ))}
@@ -745,7 +810,9 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
             <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
               <Trophy className="w-4 h-4 text-primary-foreground" />
             </div>
-            <span className="font-bold text-foreground">Sports Academy</span>
+            <span className="font-bold text-foreground">
+              PM SHRI KENDRIYA VIDYALAYA ARTY CENTRE NASHIK
+            </span>
           </div>
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()}. Built with ❤️ using{" "}

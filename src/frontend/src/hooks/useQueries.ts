@@ -62,3 +62,18 @@ export function useGenerateInviteCode() {
     },
   });
 }
+
+export function useGetRegistrationByAdmissionNumber() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async (
+      admissionNumber: string,
+    ): Promise<Registration | null> => {
+      if (!actor) throw new Error("Actor not ready");
+      const result = await (actor as any).getRegistrationByAdmissionNumber(
+        admissionNumber,
+      );
+      return result.length > 0 ? result[0] : null;
+    },
+  });
+}

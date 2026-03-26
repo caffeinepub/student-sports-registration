@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Shield, Trophy } from "lucide-react";
+import { CheckCircle2, Search, Shield, Trophy } from "lucide-react";
 import { motion } from "motion/react";
 
 interface Props {
   registrationId: bigint;
   onRegisterAnother: () => void;
   onAdminClick: () => void;
+  onCheckDetailsClick: () => void;
 }
 
 export default function SuccessPage({
   registrationId,
   onRegisterAnother,
   onAdminClick,
+  onCheckDetailsClick,
 }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -23,7 +25,7 @@ export default function SuccessPage({
               <Trophy className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-lg text-foreground tracking-tight">
-              Sports Academy
+              PM SHRI KENDRIYA VIDYALAYA ARTY CENTRE NASHIK
             </span>
           </div>
           <Button
@@ -84,6 +86,16 @@ export default function SuccessPage({
             data-ocid="success.primary_button"
           >
             Register Another Student
+          </Button>
+
+          <Button
+            onClick={onCheckDetailsClick}
+            variant="outline"
+            className="mt-3 w-full rounded-full font-bold uppercase tracking-widest text-sm py-5"
+            data-ocid="check.open_modal_button"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Check My Details
           </Button>
         </motion.div>
       </main>
