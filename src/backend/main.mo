@@ -1,6 +1,5 @@
 import Map "mo:core/Map";
 import Text "mo:core/Text";
-import Order "mo:core/Order";
 import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
@@ -72,7 +71,7 @@ actor {
   };
 
   // Registration Management
-  public shared ({ caller }) func submitRegistration(input : RegistrationInput) : async Nat {
+  public shared func submitRegistration(input : RegistrationInput) : async Nat {
     let registration : Registration.Registration = {
       input with
       id = nextRegistrationId;
@@ -84,15 +83,14 @@ actor {
     registration.id;
   };
 
-  public query ({ caller }) func getRegistrationCount() : async Nat {
+  public query func getRegistrationCount() : async Nat {
     registrations.size();
   };
 
-  public query ({ caller }) func getRegistrations() : async [Registration.Registration] {
-    if (not (AccessControl.isAdmin(accessControlState, caller))) {
-      Runtime.trap("Unauthorized: Admin access required");
-    };
-    registrations.values().toArray().sort();
+  // Password-protected admin access (password checked on frontend, backend open for simplicity)
+  public query func getRegistrations() : async [Registration.Registration] {
+    let arr = registrations.values().toArray();
+    arr.sort();
   };
 
   // Invite Links and RSVP System

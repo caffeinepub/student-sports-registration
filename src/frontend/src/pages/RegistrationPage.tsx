@@ -23,6 +23,7 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useActor } from "../hooks/useActor";
 import { useSubmitRegistration } from "../hooks/useQueries";
 
 interface Props {
@@ -156,6 +157,9 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const { mutateAsync, isPending } = useSubmitRegistration();
+  const { actor, isFetching: actorLoading } = useActor();
+
+  const isSubmitDisabled = isPending || actorLoading || !actor;
 
   const set = (k: keyof FormData, v: string) => {
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -710,14 +714,19 @@ export default function RegistrationPage({ onSuccess, onAdminClick }: Props) {
               <div className="mt-10">
                 <Button
                   type="submit"
-                  disabled={isPending}
+                  disabled={isSubmitDisabled}
                   className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm py-6"
                   data-ocid="form.submit_button"
                 >
                   {isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Submitting...
+                    </>
+                  ) : actorLoading || !actor ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Initializing...
                     </>
                   ) : (
                     "Submit Registration"

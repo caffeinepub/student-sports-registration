@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -18,8 +19,10 @@ import {
 } from "@/components/ui/table";
 import {
   ArrowLeft,
+  Eye,
+  EyeOff,
   FileSpreadsheet,
-  Loader2,
+  Lock,
   RefreshCw,
   Search,
   Shield,
@@ -30,13 +33,13 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Registration } from "../backend.d";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
-  useGenerateInviteCode,
   useGetRegistrationCount,
   useGetRegistrations,
-  useIsCallerAdmin,
 } from "../hooks/useQueries";
+
+const ADMIN_USERNAME = "shubhambyk@gmail.com";
+const ADMIN_PASSWORD = "Shubham@30";
 
 interface Props {
   onBack: () => void;
@@ -139,39 +142,36 @@ function exportToCsv(registrations: Registration[]) {
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const today = new Date().toISOString().slice(0, 10);
-  const filename = `registrations_${today}.csv`;
-
   const link = document.createElement("a");
   link.href = url;
-  link.download = filename;
+  link.download = `registrations_${today}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 }
 
 export default function AdminDashboard({ onBack }: Props) {
-  const { login, loginStatus, identity, clear } = useInternetIdentity();
-  const isLoggedIn = loginStatus === "success" && !!identity;
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [selected, setSelected] = useState<Registration | null>(null);
+  const [search, setSearch] = useState("");
+
   const {
     data: registrations,
     isLoading: regLoading,
     refetch,
   } = useGetRegistrations();
   const { data: count } = useGetRegistrationCount();
-  const { mutateAsync: generateCode, isPending: codeGenerating } =
-    useGenerateInviteCode();
-  const [selected, setSelected] = useState<Registration | null>(null);
-  const [search, setSearch] = useState("");
 
-  const isLoggingIn = loginStatus === "logging-in";
-
-  const handleGenerateCode = async () => {
-    try {
-      const code = await generateCode();
-      await navigator.clipboard.writeText(code);
-      toast.success(`Invite code copied: ${code}`);
-    } catch {
-      toast.error("Failed to generate invite code");
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      setIsLoggedIn(true);
+      setLoginError("");
+    } else {
+      setLoginError("Invalid username or password. Please try again.");
     }
   };
 
@@ -196,6 +196,25 @@ export default function AdminDashboard({ onBack }: Props) {
     );
   });
 
+  // Group by game (case-insensitive), sorted alphabetically by game name
+  const gameGroups: { gameName: string; rows: Registration[] }[] = [];
+  const gameMap = new Map<string, { gameName: string; rows: Registration[] }>();
+  for (const r of filtered) {
+    const key = r.game.toLowerCase();
+    if (!gameMap.has(key)) {
+      gameMap.set(key, { gameName: r.game, rows: [] });
+    }
+    gameMap.get(key)!.rows.push(r);
+  }
+  for (const entry of gameMap.values()) {
+    entry.rows.sort((a, b) => a.studentName.localeCompare(b.studentName));
+    gameGroups.push(entry);
+  }
+  gameGroups.sort((a, b) => a.gameName.localeCompare(b.gameName));
+
+  // Flattened index for deterministic row markers
+  let rowCounter = 0;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
@@ -218,32 +237,20 @@ export default function AdminDashboard({ onBack }: Props) {
               Admin Dashboard
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <Button
-                variant="outline"
-                className="rounded-full uppercase text-xs font-bold tracking-wider"
-                onClick={() => clear()}
-                data-ocid="admin.secondary_button"
-              >
-                Logout
-              </Button>
-            ) : (
-              <Button
-                className="rounded-full bg-primary text-primary-foreground uppercase text-xs font-bold tracking-wider"
-                onClick={() => login()}
-                disabled={isLoggingIn}
-                data-ocid="admin.primary_button"
-              >
-                {isLoggingIn ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                ) : (
-                  <Shield className="w-4 h-4 mr-1" />
-                )}
-                Login
-              </Button>
-            )}
-          </div>
+          {isLoggedIn && (
+            <Button
+              variant="outline"
+              className="rounded-full uppercase text-xs font-bold tracking-wider"
+              onClick={() => {
+                setIsLoggedIn(false);
+                setUsername("");
+                setPassword("");
+              }}
+              data-ocid="admin.secondary_button"
+            >
+              Logout
+            </Button>
+          )}
         </div>
       </header>
 
@@ -252,63 +259,90 @@ export default function AdminDashboard({ onBack }: Props) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-24 text-center"
+            className="flex flex-col items-center justify-center py-16"
             data-ocid="admin.panel"
           >
-            <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center mb-6">
-              <Shield className="w-10 h-10 text-primary" />
+            <div className="w-full max-w-sm bg-card rounded-2xl shadow-lg p-8">
+              <div className="flex flex-col items-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                  <Shield className="w-8 h-8 text-primary" />
+                </div>
+                <h2 className="text-xl font-bold text-foreground">
+                  Admin Login
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Enter your credentials to continue
+                </p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="username"
+                    className="text-xs font-bold uppercase tracking-wider"
+                  >
+                    Username
+                  </Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="Enter username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    data-ocid="admin.input"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label
+                    htmlFor="password"
+                    className="text-xs font-bold uppercase tracking-wider"
+                  >
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      className="pr-10"
+                      data-ocid="admin.textarea"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {loginError && (
+                  <p className="text-sm text-destructive font-medium">
+                    {loginError}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest"
+                  data-ocid="admin.primary_button"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Login
+                </Button>
+              </form>
             </div>
-            <h2 className="text-2xl font-bold text-foreground">
-              Admin Access Required
-            </h2>
-            <p className="mt-2 text-muted-foreground max-w-sm">
-              Please log in with your administrator account to view registration
-              data.
-            </p>
-            <Button
-              className="mt-8 rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest px-8"
-              onClick={() => login()}
-              disabled={isLoggingIn}
-              data-ocid="admin.primary_button"
-            >
-              {isLoggingIn ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Logging in...
-                </>
-              ) : (
-                "Login with Internet Identity"
-              )}
-            </Button>
           </motion.div>
-        ) : adminLoading ? (
-          <div
-            className="flex items-center justify-center py-24"
-            data-ocid="admin.loading_state"
-          >
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : !isAdmin ? (
-          <div
-            className="flex flex-col items-center justify-center py-24 text-center"
-            data-ocid="admin.error_state"
-          >
-            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-              <Shield className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
-            <p className="mt-2 text-muted-foreground">
-              You don't have admin privileges.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => clear()}
-              className="mt-6 rounded-full"
-              data-ocid="admin.secondary_button"
-            >
-              Logout
-            </Button>
-          </div>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -351,17 +385,6 @@ export default function AdminDashboard({ onBack }: Props) {
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-1" />
                   Export to Excel
-                </Button>
-                <Button
-                  className="rounded-full bg-primary text-primary-foreground uppercase text-xs font-bold tracking-wider"
-                  onClick={handleGenerateCode}
-                  disabled={codeGenerating}
-                  data-ocid="admin.primary_button"
-                >
-                  {codeGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                  ) : null}
-                  Generate Invite Code
                 </Button>
               </div>
             </div>
@@ -430,55 +453,79 @@ export default function AdminDashboard({ onBack }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((reg, idx) => (
-                      <TableRow
-                        key={reg.id.toString()}
-                        className="hover:bg-accent/30 cursor-pointer transition-colors"
-                        onClick={() => setSelected(reg)}
-                        data-ocid={`admin.row.item.${idx + 1}`}
-                      >
-                        <TableCell className="font-mono font-bold text-primary">
-                          #{reg.id.toString()}
-                        </TableCell>
-                        <TableCell>{reg.game}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {reg.admissionNumber}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {reg.studentName}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{reg.studentClass}</Badge>
-                        </TableCell>
-                        <TableCell>{reg.gender}</TableCell>
-                        <TableCell>{reg.ageGroup}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={reg.food === "Veg" ? "default" : "outline"}
-                            className={
-                              reg.food === "Veg"
-                                ? "bg-green-100 text-green-700 border-green-200"
-                                : "text-orange-700 border-orange-200"
-                            }
+                    {gameGroups.map((group) => (
+                      <>
+                        {/* Game group header */}
+                        <TableRow key={`group-${group.gameName}`}>
+                          <TableCell
+                            colSpan={9}
+                            className="bg-primary/10 text-primary font-bold text-sm uppercase tracking-wider py-2 px-4"
                           >
-                            {reg.food}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary hover:text-primary/80 text-xs font-bold uppercase"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelected(reg);
-                            }}
-                            data-ocid="admin.edit_button"
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                            🏅 {group.gameName.toUpperCase()} &mdash;{" "}
+                            {group.rows.length} student
+                            {group.rows.length !== 1 ? "s" : ""}
+                          </TableCell>
+                        </TableRow>
+                        {/* Rows for this game */}
+                        {group.rows.map((reg) => {
+                          rowCounter += 1;
+                          const idx = rowCounter;
+                          return (
+                            <TableRow
+                              key={reg.id.toString()}
+                              className="hover:bg-accent/30 cursor-pointer transition-colors"
+                              onClick={() => setSelected(reg)}
+                              data-ocid={`admin.row.item.${idx}`}
+                            >
+                              <TableCell className="font-mono font-bold text-primary">
+                                #{reg.id.toString()}
+                              </TableCell>
+                              <TableCell>{reg.game}</TableCell>
+                              <TableCell className="font-mono text-sm">
+                                {reg.admissionNumber}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {reg.studentName}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {reg.studentClass}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{reg.gender}</TableCell>
+                              <TableCell>{reg.ageGroup}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    reg.food === "Veg" ? "default" : "outline"
+                                  }
+                                  className={
+                                    reg.food === "Veg"
+                                      ? "bg-green-100 text-green-700 border-green-200"
+                                      : "text-orange-700 border-orange-200"
+                                  }
+                                >
+                                  {reg.food}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-primary hover:text-primary/80 text-xs font-bold uppercase"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelected(reg);
+                                  }}
+                                  data-ocid="admin.edit_button"
+                                >
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </>
                     ))}
                   </TableBody>
                 </Table>
