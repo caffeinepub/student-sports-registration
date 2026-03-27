@@ -774,10 +774,44 @@ export default function AdminDashboard({ onBack }: Props) {
                 <Label className="text-xs font-bold uppercase tracking-wider">
                   Game
                 </Label>
-                <Input
+                <Select
                   value={editForm.game}
-                  onChange={(e) => setField("game", e.target.value)}
-                />
+                  onValueChange={(v) => setField("game", v)}
+                >
+                  <SelectTrigger className="bg-secondary border-border">
+                    <SelectValue placeholder="Select a game" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "ARCHERY",
+                      "ATHLETICS",
+                      "BADMINTON",
+                      "BASKETBALL",
+                      "BOXING",
+                      "CHESS",
+                      "CRICKET",
+                      "FOOTBALL",
+                      "GYMNASTICS",
+                      "HANDBALL",
+                      "HOCKEY",
+                      "JUDO",
+                      "KABADDI",
+                      "KHO KHO",
+                      "LAWN TENNIS",
+                      "ROPE SKIPPING",
+                      "SHOOTING",
+                      "SWIMMING",
+                      "TABLE TENNIS",
+                      "VOLLEYBALL",
+                      "WRESTLING",
+                      "YOGA",
+                    ].map((g) => (
+                      <SelectItem key={g} value={g}>
+                        {g}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider">

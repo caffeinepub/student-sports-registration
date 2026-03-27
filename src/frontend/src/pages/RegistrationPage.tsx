@@ -365,17 +365,48 @@ export default function RegistrationPage({
                   <Label htmlFor="game">
                     <FieldLabel>Game / Sport</FieldLabel>
                   </Label>
-                  <div className="relative">
-                    <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
+                  <Select
+                    value={form.game}
+                    onValueChange={(v) => set("game", v)}
+                  >
+                    <SelectTrigger
                       id="game"
-                      placeholder="e.g. Football, Cricket, Athletics"
-                      value={form.game}
-                      onChange={(e) => set("game", e.target.value)}
-                      className="pl-9 bg-secondary border-border"
-                      data-ocid="form.input"
-                    />
-                  </div>
+                      className="bg-secondary border-border"
+                      data-ocid="form.select"
+                    >
+                      <SelectValue placeholder="Select a game" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        "ARCHERY",
+                        "ATHLETICS",
+                        "BADMINTON",
+                        "BASKETBALL",
+                        "BOXING",
+                        "CHESS",
+                        "CRICKET",
+                        "FOOTBALL",
+                        "GYMNASTICS",
+                        "HANDBALL",
+                        "HOCKEY",
+                        "JUDO",
+                        "KABADDI",
+                        "KHO KHO",
+                        "LAWN TENNIS",
+                        "ROPE SKIPPING",
+                        "SHOOTING",
+                        "SWIMMING",
+                        "TABLE TENNIS",
+                        "VOLLEYBALL",
+                        "WRESTLING",
+                        "YOGA",
+                      ].map((g) => (
+                        <SelectItem key={g} value={g}>
+                          {g}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <ErrorMsg msg={errors.game} />
                 </div>
 
