@@ -8,6 +8,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -17,12 +24,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Eye,
   EyeOff,
   FileSpreadsheet,
   Lock,
+  Pencil,
   RefreshCw,
   Search,
   Shield,
@@ -43,8 +52,43 @@ import {
 const ADMIN_USERNAME = "shubhambyk@gmail.com";
 const ADMIN_PASSWORD = "Shubham@30";
 
+const APPAREL_SIZES = [
+  "24",
+  "26",
+  "28",
+  "30",
+  "32",
+  "34",
+  "36",
+  "38",
+  "40",
+  "42",
+  "44",
+  "46",
+];
+
 interface Props {
   onBack: () => void;
+}
+
+interface EditForm {
+  game: string;
+  admissionNumber: string;
+  studentName: string;
+  motherName: string;
+  fatherName: string;
+  dobDate: string;
+  dobMonth: string;
+  dobYear: string;
+  gender: string;
+  ageGroup: string;
+  studentClass: string;
+  mobileNo: string;
+  shoeSize: string;
+  tShirtShortsSize: string;
+  trackSuitSize: string;
+  blazerSize: string;
+  food: string;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -148,6 +192,28 @@ function exportToCsv(registrations: Registration[]) {
   URL.revokeObjectURL(url);
 }
 
+function toEditForm(reg: Registration): EditForm {
+  return {
+    game: reg.game,
+    admissionNumber: reg.admissionNumber,
+    studentName: reg.studentName,
+    motherName: reg.motherName,
+    fatherName: reg.fatherName,
+    dobDate: reg.dobDate.toString(),
+    dobMonth: reg.dobMonth.toString(),
+    dobYear: reg.dobYear.toString(),
+    gender: reg.gender,
+    ageGroup: reg.ageGroup,
+    studentClass: reg.studentClass,
+    mobileNo: reg.mobileNo,
+    shoeSize: reg.shoeSize,
+    tShirtShortsSize: reg.tShirtShortsSize,
+    trackSuitSize: reg.trackSuitSize,
+    blazerSize: reg.blazerSize,
+    food: reg.food,
+  };
+}
+
 export default function AdminDashboard({ onBack }: Props) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
@@ -155,16 +221,21 @@ export default function AdminDashboard({ onBack }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [selected, setSelected] = useState<Registration | null>(null);
+  const [editing, setEditing] = useState<Registration | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<bigint | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { actor } = useActor();
+  const queryClient = useQueryClient();
   const {
     data: registrations,
     isLoading: regLoading,
     refetch,
   } = useGetRegistrations();
-  const { data: count } = useGetRegistrationCount();
+  const { data: count, refetch: refetchCount } = useGetRegistrationCount();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +244,16 @@ export default function AdminDashboard({ onBack }: Props) {
       setLoginError("");
     } else {
       setLoginError("Invalid username or password. Please try again.");
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetch(), refetchCount()]);
+      toast.success("Data refreshed");
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -200,14 +281,72 @@ export default function AdminDashboard({ onBack }: Props) {
     }
     setDeletingId(reg.id);
     try {
-      await (actor as any).deleteRegistration(reg.id);
-      toast.success(`Registration for ${reg.studentName} deleted`);
-      refetch();
-    } catch {
+      const success = await actor.deleteRegistration(reg.id);
+      if (success) {
+        toast.success(`Registration for ${reg.studentName} deleted`);
+        await queryClient.invalidateQueries({ queryKey: ["registrations"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["registrationCount"],
+        });
+      } else {
+        toast.error("Registration not found or already deleted");
+      }
+    } catch (err) {
       toast.error("Failed to delete registration");
+      console.error(err);
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const handleEditOpen = (e: React.MouseEvent, reg: Registration) => {
+    e.stopPropagation();
+    setEditing(reg);
+    setEditForm(toEditForm(reg));
+  };
+
+  const handleEditSave = async () => {
+    if (!actor || !editing || !editForm) return;
+    setIsSaving(true);
+    try {
+      const input = {
+        game: editForm.game,
+        admissionNumber: editForm.admissionNumber,
+        studentName: editForm.studentName,
+        motherName: editForm.motherName,
+        fatherName: editForm.fatherName,
+        dobDate: BigInt(editForm.dobDate || "0"),
+        dobMonth: BigInt(editForm.dobMonth || "0"),
+        dobYear: BigInt(editForm.dobYear || "0"),
+        gender: editForm.gender,
+        ageGroup: editForm.ageGroup,
+        studentClass: editForm.studentClass,
+        mobileNo: editForm.mobileNo,
+        shoeSize: editForm.shoeSize,
+        tShirtShortsSize: editForm.tShirtShortsSize,
+        trackSuitSize: editForm.trackSuitSize,
+        blazerSize: editForm.blazerSize,
+        food: editForm.food,
+      };
+      const success = await actor.updateRegistration(editing.id, input);
+      if (success) {
+        toast.success(`Registration for ${editForm.studentName} updated`);
+        await queryClient.invalidateQueries({ queryKey: ["registrations"] });
+        setEditing(null);
+        setEditForm(null);
+      } else {
+        toast.error("Failed to update registration");
+      }
+    } catch (err) {
+      toast.error("Error saving changes");
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const setField = (key: keyof EditForm, value: string) => {
+    setEditForm((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
   const filtered = (registrations ?? []).filter((r) => {
@@ -245,7 +384,6 @@ export default function AdminDashboard({ onBack }: Props) {
               type="button"
               onClick={onBack}
               className="mr-2 p-2 rounded-full hover:bg-accent transition-colors"
-              data-ocid="nav.link"
               aria-label="Go back"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -266,7 +404,6 @@ export default function AdminDashboard({ onBack }: Props) {
                 setUsername("");
                 setPassword("");
               }}
-              data-ocid="admin.secondary_button"
             >
               Logout
             </Button>
@@ -280,7 +417,6 @@ export default function AdminDashboard({ onBack }: Props) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center py-16"
-            data-ocid="admin.panel"
           >
             <div className="w-full max-w-sm bg-card rounded-2xl shadow-lg p-8">
               <div className="flex flex-col items-center mb-6">
@@ -309,7 +445,6 @@ export default function AdminDashboard({ onBack }: Props) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
-                    data-ocid="admin.input"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -328,7 +463,6 @@ export default function AdminDashboard({ onBack }: Props) {
                       onChange={(e) => setPassword(e.target.value)}
                       autoComplete="current-password"
                       className="pr-10"
-                      data-ocid="admin.textarea"
                     />
                     <button
                       type="button"
@@ -351,7 +485,6 @@ export default function AdminDashboard({ onBack }: Props) {
                 <Button
                   type="submit"
                   className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest"
-                  data-ocid="admin.primary_button"
                 >
                   <Lock className="w-4 h-4 mr-2" />
                   Login
@@ -383,11 +516,13 @@ export default function AdminDashboard({ onBack }: Props) {
                 <Button
                   variant="outline"
                   className="rounded-full uppercase text-xs font-bold tracking-wider"
-                  onClick={() => refetch()}
-                  data-ocid="admin.secondary_button"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
                 >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Refresh
+                  <RefreshCw
+                    className={`w-4 h-4 mr-1 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
+                  {isRefreshing ? "Refreshing..." : "Refresh"}
                 </Button>
                 <Button
                   variant="outline"
@@ -396,7 +531,6 @@ export default function AdminDashboard({ onBack }: Props) {
                   disabled={
                     regLoading || !registrations || registrations.length === 0
                   }
-                  data-ocid="admin.export_button"
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-1" />
                   Export to Excel
@@ -411,29 +545,25 @@ export default function AdminDashboard({ onBack }: Props) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 bg-card border-border"
-                data-ocid="admin.search_input"
               />
             </div>
 
             <div className="bg-card rounded-2xl shadow-card overflow-hidden">
               {regLoading ? (
-                <div className="p-6 space-y-3" data-ocid="admin.loading_state">
+                <div className="p-6 space-y-3">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <Skeleton key={i} className="h-12 w-full rounded-lg" />
                   ))}
                 </div>
               ) : filtered.length === 0 ? (
-                <div
-                  className="py-16 text-center"
-                  data-ocid="admin.empty_state"
-                >
+                <div className="py-16 text-center">
                   <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground font-medium">
                     No registrations found
                   </p>
                 </div>
               ) : (
-                <Table data-ocid="admin.table">
+                <Table>
                   <TableHeader>
                     <TableRow className="bg-accent/50">
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
@@ -528,9 +658,18 @@ export default function AdminDashboard({ onBack }: Props) {
                                     e.stopPropagation();
                                     setSelected(reg);
                                   }}
-                                  data-ocid="admin.edit_button"
                                 >
                                   View
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-blue-600 hover:text-blue-700 text-xs font-bold uppercase ml-1"
+                                  onClick={(e) => handleEditOpen(e, reg)}
+                                  data-ocid={`admin.edit_button.${idx}`}
+                                >
+                                  <Pencil className="w-3 h-3 mr-1" />
+                                  Edit
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -538,7 +677,6 @@ export default function AdminDashboard({ onBack }: Props) {
                                   className="text-destructive hover:text-destructive/80 text-xs font-bold uppercase ml-1"
                                   onClick={(e) => handleDelete(e, reg)}
                                   disabled={deletingId === reg.id}
-                                  data-ocid="admin.delete_button"
                                 >
                                   <Trash2 className="w-3 h-3 mr-1" />
                                   {deletingId === reg.id ? "..." : "Del"}
@@ -557,11 +695,12 @@ export default function AdminDashboard({ onBack }: Props) {
         )}
       </main>
 
+      {/* View Dialog */}
       <Dialog
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
       >
-        <DialogContent className="max-w-2xl" data-ocid="admin.dialog">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold">
               Registration #{selected?.id?.toString()} — {selected?.studentName}
@@ -604,9 +743,272 @@ export default function AdminDashboard({ onBack }: Props) {
               variant="outline"
               className="rounded-full"
               onClick={() => setSelected(null)}
-              data-ocid="admin.close_button"
             >
               Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog
+        open={!!editing}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditing(null);
+            setEditForm(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">
+              Edit Registration #{editing?.id?.toString()} —{" "}
+              {editing?.studentName}
+            </DialogTitle>
+          </DialogHeader>
+          {editForm && (
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Game
+                </Label>
+                <Input
+                  value={editForm.game}
+                  onChange={(e) => setField("game", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Admission Number
+                </Label>
+                <Input
+                  value={editForm.admissionNumber}
+                  onChange={(e) => setField("admissionNumber", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Student Name
+                </Label>
+                <Input
+                  value={editForm.studentName}
+                  onChange={(e) => setField("studentName", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Mother's Name
+                </Label>
+                <Input
+                  value={editForm.motherName}
+                  onChange={(e) => setField("motherName", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Father's Name
+                </Label>
+                <Input
+                  value={editForm.fatherName}
+                  onChange={(e) => setField("fatherName", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Date of Birth
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={31}
+                    placeholder="DD"
+                    value={editForm.dobDate}
+                    onChange={(e) => setField("dobDate", e.target.value)}
+                    className="w-16"
+                  />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    placeholder="MM"
+                    value={editForm.dobMonth}
+                    onChange={(e) => setField("dobMonth", e.target.value)}
+                    className="w-16"
+                  />
+                  <Input
+                    type="number"
+                    min={2000}
+                    max={2020}
+                    placeholder="YYYY"
+                    value={editForm.dobYear}
+                    onChange={(e) => setField("dobYear", e.target.value)}
+                    className="w-24"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Gender
+                </Label>
+                <Select
+                  value={editForm.gender}
+                  onValueChange={(v) => setField("gender", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="B">B (Boy)</SelectItem>
+                    <SelectItem value="G">G (Girl)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Age Group
+                </Label>
+                <Select
+                  value={editForm.ageGroup}
+                  onValueChange={(v) => setField("ageGroup", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="U14">U14</SelectItem>
+                    <SelectItem value="U17">U17</SelectItem>
+                    <SelectItem value="U19">U19</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Class
+                </Label>
+                <Input
+                  value={editForm.studentClass}
+                  onChange={(e) => setField("studentClass", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Mobile No
+                </Label>
+                <Input
+                  value={editForm.mobileNo}
+                  onChange={(e) => setField("mobileNo", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Shoe Size
+                </Label>
+                <Input
+                  value={editForm.shoeSize}
+                  onChange={(e) => setField("shoeSize", e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  T-Shirt & Shorts Size
+                </Label>
+                <Select
+                  value={editForm.tShirtShortsSize}
+                  onValueChange={(v) => setField("tShirtShortsSize", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APPAREL_SIZES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Track Suit Size
+                </Label>
+                <Select
+                  value={editForm.trackSuitSize}
+                  onValueChange={(v) => setField("trackSuitSize", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APPAREL_SIZES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Blazer Size
+                </Label>
+                <Select
+                  value={editForm.blazerSize}
+                  onValueChange={(v) => setField("blazerSize", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {APPAREL_SIZES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold uppercase tracking-wider">
+                  Food
+                </Label>
+                <Select
+                  value={editForm.food}
+                  onValueChange={(v) => setField("food", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Veg">Veg</SelectItem>
+                    <SelectItem value="Non-Veg">Non-Veg</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="rounded-full"
+              onClick={() => {
+                setEditing(null);
+                setEditForm(null);
+              }}
+              disabled={isSaving}
+              data-ocid="admin.cancel_button"
+            >
+              Cancel
+            </Button>
+            <Button
+              className="rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+              onClick={handleEditSave}
+              disabled={isSaving}
+              data-ocid="admin.save_button"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DialogContent>

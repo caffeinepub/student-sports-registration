@@ -69,11 +69,13 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'deleteRegistration' : ActorMethod<[bigint], boolean>,
   'generateInviteCode' : ActorMethod<[], string>,
   'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getInviteCodes' : ActorMethod<[], Array<InviteCode>>,
+  'getRegistrationByAdmissionNumber' : ActorMethod<[string], [] | [Registration]>,
   'getRegistrationCount' : ActorMethod<[], bigint>,
   'getRegistrations' : ActorMethod<[], Array<Registration>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -81,6 +83,7 @@ export interface _SERVICE {
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'submitRSVP' : ActorMethod<[string, boolean, string], undefined>,
   'submitRegistration' : ActorMethod<[RegistrationInput], bigint>,
+  'updateRegistration' : ActorMethod<[bigint, RegistrationInput], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

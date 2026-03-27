@@ -70,11 +70,13 @@ export const RegistrationInput = IDL.Record({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'deleteRegistration' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'generateInviteCode' : IDL.Func([], [IDL.Text], []),
   'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
+  'getRegistrationByAdmissionNumber' : IDL.Func([IDL.Text], [IDL.Opt(Registration)], ['query']),
   'getRegistrationCount' : IDL.Func([], [IDL.Nat], ['query']),
   'getRegistrations' : IDL.Func([], [IDL.Vec(Registration)], ['query']),
   'getUserProfile' : IDL.Func(
@@ -86,6 +88,7 @@ export const idlService = IDL.Service({
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
   'submitRegistration' : IDL.Func([RegistrationInput], [IDL.Nat], []),
+  'updateRegistration' : IDL.Func([IDL.Nat, RegistrationInput], [IDL.Bool], []),
 });
 
 export const idlInitArgs = [];
@@ -153,11 +156,13 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'deleteRegistration' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'generateInviteCode' : IDL.Func([], [IDL.Text], []),
     'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
+    'getRegistrationByAdmissionNumber' : IDL.Func([IDL.Text], [IDL.Opt(Registration)], ['query']),
     'getRegistrationCount' : IDL.Func([], [IDL.Nat], ['query']),
     'getRegistrations' : IDL.Func([], [IDL.Vec(Registration)], ['query']),
     'getUserProfile' : IDL.Func(
@@ -169,6 +174,7 @@ export const idlFactory = ({ IDL }) => {
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
     'submitRegistration' : IDL.Func([RegistrationInput], [IDL.Nat], []),
+    'updateRegistration' : IDL.Func([IDL.Nat, RegistrationInput], [IDL.Bool], []),
   });
 };
 

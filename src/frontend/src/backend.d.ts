@@ -75,6 +75,7 @@ export interface backendInterface {
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getInviteCodes(): Promise<Array<InviteCode>>;
+    getRegistrationByAdmissionNumber(admissionNumber: string): Promise<[] | [Registration]>;
     getRegistrationCount(): Promise<bigint>;
     getRegistrations(): Promise<Array<Registration>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -82,4 +83,5 @@ export interface backendInterface {
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;
     submitRegistration(input: RegistrationInput): Promise<bigint>;
+    updateRegistration(id: bigint, input: RegistrationInput): Promise<boolean>;
 }

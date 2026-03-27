@@ -163,6 +163,9 @@ export interface backendInterface {
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;
+    deleteRegistration(id: bigint): Promise<boolean>;
+    updateRegistration(id: bigint, input: RegistrationInput): Promise<boolean>;
+    getRegistrationByAdmissionNumber(admissionNumber: string): Promise<[] | [Registration]>;
     submitRegistration(input: RegistrationInput): Promise<bigint>;
 }
 import type { UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -361,6 +364,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.submitRegistration(arg0);
+            return result;
+        }
+    }
+    async deleteRegistration(arg0: bigint): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteRegistration(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteRegistration(arg0);
+            return result;
+        }
+    }
+    async updateRegistration(arg0: bigint, arg1: RegistrationInput): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateRegistration(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateRegistration(arg0, arg1);
+            return result;
+        }
+    }
+    async getRegistrationByAdmissionNumber(arg0: string): Promise<[] | [Registration]> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getRegistrationByAdmissionNumber(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getRegistrationByAdmissionNumber(arg0);
             return result;
         }
     }

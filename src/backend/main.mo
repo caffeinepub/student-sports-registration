@@ -1,6 +1,5 @@
 import Map "mo:core/Map";
 import Text "mo:core/Text";
-import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Nat "mo:core/Nat";
 import Runtime "mo:core/Runtime";
@@ -12,16 +11,13 @@ import InviteLinksModule "invite-links/invite-links-module";
 import Registration "registration";
 
 actor {
-  // Authorization component state
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
-  // Invite links system state
   let inviteLinksState = InviteLinksModule.initState();
 
   var nextRegistrationId = 0;
   let registrations = Map.empty<Nat, Registration.Registration>();
-  // Track used admission numbers for uniqueness check
   let admissionNumbers = Map.empty<Text, Nat>();
 
   public type RegistrationInput = {
@@ -44,7 +40,6 @@ actor {
     food : Text;
   };
 
-  // User Profile Management
   public type UserProfile = {
     name : Text;
   };
@@ -72,9 +67,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Registration Management
   public shared func submitRegistration(input : RegistrationInput) : async Nat {
-    // Check for duplicate admission number
     switch (admissionNumbers.get(input.admissionNumber)) {
       case (?_) {
         Runtime.trap("DUPLICATE_ADMISSION: This admission number is already registered.");
@@ -94,17 +87,41 @@ actor {
     registration.id;
   };
 
+  public shared func updateRegistration(id : Nat, input : RegistrationInput) : async Bool {
+    switch (registrations.get(id)) {
+      case null { false };
+      case (?existing) {
+        if (existing.admissionNumber != input.admissionNumber) {
+          switch (admissionNumbers.get(input.admissionNumber)) {
+            case (?_) {
+              Runtime.trap("DUPLICATE_ADMISSION: This admission number is already registered.");
+            };
+            case null {};
+          };
+          admissionNumbers.remove(existing.admissionNumber);
+          admissionNumbers.add(input.admissionNumber, id);
+        };
+        let updated : Registration.Registration = {
+          input with
+          id = existing.id;
+          timestamp = existing.timestamp;
+        };
+        registrations.remove(id);
+        registrations.add(id, updated);
+        true;
+      };
+    };
+  };
+
   public query func getRegistrationCount() : async Nat {
     registrations.size();
   };
 
-  // Password-protected admin access (password checked on frontend, backend open for simplicity)
   public query func getRegistrations() : async [Registration.Registration] {
     let arr = registrations.values().toArray();
     arr.sort();
   };
 
-  // Look up a single registration by admission number (for player self-check)
   public query func getRegistrationByAdmissionNumber(admissionNumber : Text) : async ?Registration.Registration {
     switch (admissionNumbers.get(admissionNumber)) {
       case (?id) { registrations.get(id) };
@@ -112,21 +129,17 @@ actor {
     };
   };
 
-  // Delete a registration by ID (admin only, password checked on frontend)
   public shared func deleteRegistration(id : Nat) : async Bool {
     switch (registrations.get(id)) {
       case (?reg) {
-        ignore registrations.remove(id);
-        ignore admissionNumbers.remove(reg.admissionNumber);
+        registrations.remove(id);
+        admissionNumbers.remove(reg.admissionNumber);
         true;
       };
       case null { false };
     };
   };
 
-  // Invite Links and RSVP System
-
-  // Generate invite code (admin only)
   public shared ({ caller }) func generateInviteCode() : async Text {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can generate invite codes");
@@ -137,12 +150,10 @@ actor {
     code;
   };
 
-  // Submit RSVP (public, but requires valid invite code)
   public func submitRSVP(name : Text, attending : Bool, inviteCode : Text) : async () {
     InviteLinksModule.submitRSVP(inviteLinksState, name, attending, inviteCode);
   };
 
-  // Get all RSVPs (admin only)
   public query ({ caller }) func getAllRSVPs() : async [InviteLinksModule.RSVP] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view RSVPs");
@@ -150,7 +161,6 @@ actor {
     InviteLinksModule.getAllRSVPs(inviteLinksState);
   };
 
-  // Get all invite codes (admin only)
   public query ({ caller }) func getInviteCodes() : async [InviteLinksModule.InviteCode] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can view invite codes");

@@ -70,10 +70,10 @@ export function useGetRegistrationByAdmissionNumber() {
       admissionNumber: string,
     ): Promise<Registration | null> => {
       if (!actor) throw new Error("Actor not ready");
-      const result = await (actor as any).getRegistrationByAdmissionNumber(
-        admissionNumber,
-      );
-      return result.length > 0 ? result[0] : null;
+      const result =
+        await actor.getRegistrationByAdmissionNumber(admissionNumber);
+      // result is [] | [Registration] from Candid opt type
+      return result.length > 0 ? (result[0] ?? null) : null;
     },
   });
 }

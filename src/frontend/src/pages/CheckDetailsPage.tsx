@@ -125,7 +125,11 @@ export default function CheckDetailsPage({ onBack }: Props) {
     e.preventDefault();
     if (!admissionNumber.trim()) return;
     setSearched(false);
-    await mutateAsync(admissionNumber.trim());
+    try {
+      await mutateAsync(admissionNumber.trim());
+    } catch {
+      // ignore error, we'll show not-found UI
+    }
     setSearched(true);
   };
 
@@ -232,7 +236,7 @@ export default function CheckDetailsPage({ onBack }: Props) {
                 </div>
               )}
 
-              {searched && data === null && !isPending && (
+              {searched && !data && !isPending && (
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
