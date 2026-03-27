@@ -266,14 +266,6 @@ export default function RegistrationPage({
             </a>
             <button
               type="button"
-              onClick={onCheckDetailsClick}
-              className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-primary transition-colors"
-              data-ocid="nav.link"
-            >
-              Check Details
-            </button>
-            <button
-              type="button"
               onClick={onAdminClick}
               className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-primary transition-colors"
               data-ocid="nav.admin_link"
