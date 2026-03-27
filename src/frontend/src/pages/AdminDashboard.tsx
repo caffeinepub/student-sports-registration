@@ -36,7 +36,6 @@ import {
   Search,
   Shield,
   Trash2,
-  Trophy,
   Users,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -378,7 +377,7 @@ export default function AdminDashboard({ onBack }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="bg-card shadow-xs sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-16 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -388,9 +387,11 @@ export default function AdminDashboard({ onBack }: Props) {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img
+              src="/assets/uploads/img_20260327_090837-019d2d61-79fe-7173-82fa-f76bcfc3c41e-1.jpg"
+              alt="KV Logo"
+              className="w-14 h-14 object-contain rounded-full"
+            />
             <span className="font-bold text-lg text-foreground tracking-tight">
               Admin Dashboard
             </span>
@@ -477,11 +478,11 @@ export default function AdminDashboard({ onBack }: Props) {
                     </button>
                   </div>
                 </div>
-                {loginError && (
-                  <p className="text-sm text-destructive font-medium">
-                    {loginError}
-                  </p>
-                )}
+                loginError && (
+                <p className="text-sm text-destructive font-medium">
+                  {loginError}
+                </p>
+                )
                 <Button
                   type="submit"
                   className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest"
@@ -1015,7 +1016,17 @@ export default function AdminDashboard({ onBack }: Props) {
       </Dialog>
 
       <footer className="bg-card border-t border-border mt-10">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center">
+        <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img
+              src="/assets/uploads/img_20260327_090837-019d2d61-79fe-7173-82fa-f76bcfc3c41e-1.jpg"
+              alt="KV Logo"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <span className="font-bold text-foreground">
+              PM SHRI KENDRIYA VIDYALAYA ARTY CENTRE NASHIK
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground">
             © {new Date().getFullYear()}. Built with ❤️ using{" "}
             <a

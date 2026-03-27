@@ -8,7 +8,6 @@ import {
   Loader2,
   Search,
   Shield,
-  Trophy,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -145,11 +144,13 @@ export default function CheckDetailsPage({ onBack }: Props) {
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="bg-card shadow-xs sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 h-16 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <Trophy className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img
+              src="/assets/uploads/img_20260327_090837-019d2d61-79fe-7173-82fa-f76bcfc3c41e-1.jpg"
+              alt="KV Logo"
+              className="w-14 h-14 object-contain rounded-full"
+            />
             <span className="font-bold text-lg text-foreground tracking-tight">
               PM SHRI KENDRIYA VIDYALAYA ARTY CENTRE NASHIK
             </span>
@@ -273,15 +274,17 @@ export default function CheckDetailsPage({ onBack }: Props) {
       <footer className="bg-card border-t border-border mt-10">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img
+              src="/assets/uploads/img_20260327_090837-019d2d61-79fe-7173-82fa-f76bcfc3c41e-1.jpg"
+              alt="KV Logo"
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <span className="font-bold text-foreground">
               PM SHRI KENDRIYA VIDYALAYA ARTY CENTRE NASHIK
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()}. Built with ❤️ using{" "}
+            © new Date().getFullYear(). Built with ❤️ using" "
             <a
               href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
               target="_blank"
