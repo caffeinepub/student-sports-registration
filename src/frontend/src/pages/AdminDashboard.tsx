@@ -66,6 +66,8 @@ const APPAREL_SIZES = [
   "46",
 ];
 
+const AGE_GROUPS = ["U14", "U17", "U19"];
+
 interface Props {
   onBack: () => void;
 }
@@ -211,6 +213,65 @@ function toEditForm(reg: Registration): EditForm {
     blazerSize: reg.blazerSize,
     food: reg.food,
   };
+}
+
+type AgeSubGroup = { ageGroup: string; rows: Registration[] };
+type GenderGroup = {
+  gender: string;
+  label: string;
+  ageSubGroups: AgeSubGroup[];
+};
+type GameGroup = {
+  gameName: string;
+  total: number;
+  genderGroups: GenderGroup[];
+};
+
+function buildGameGroups(registrations: Registration[]): GameGroup[] {
+  const gameMap = new Map<string, Map<string, Map<string, Registration[]>>>();
+
+  for (const r of registrations) {
+    const gameKey = r.game.toUpperCase();
+    if (!gameMap.has(gameKey)) gameMap.set(gameKey, new Map());
+    const gMap = gameMap.get(gameKey)!;
+    const genderKey = r.gender === "G" ? "G" : "B";
+    if (!gMap.has(genderKey)) gMap.set(genderKey, new Map());
+    const aMap = gMap.get(genderKey)!;
+    if (!aMap.has(r.ageGroup)) aMap.set(r.ageGroup, []);
+    aMap.get(r.ageGroup)!.push(r);
+  }
+
+  const gameGroups: GameGroup[] = [];
+  const sortedGames = Array.from(gameMap.keys()).sort();
+
+  for (const gameKey of sortedGames) {
+    const gMap = gameMap.get(gameKey)!;
+    let total = 0;
+    const genderGroups: GenderGroup[] = [];
+
+    for (const genderKey of ["B", "G"]) {
+      const aMap = gMap.get(genderKey);
+      if (!aMap || aMap.size === 0) continue;
+      const label = genderKey === "B" ? "Boys Team" : "Girls Team";
+      const ageSubGroups: AgeSubGroup[] = [];
+
+      for (const ag of AGE_GROUPS) {
+        const rows = aMap.get(ag);
+        if (!rows || rows.length === 0) continue;
+        rows.sort((a, b) => a.studentName.localeCompare(b.studentName));
+        total += rows.length;
+        ageSubGroups.push({ ageGroup: ag, rows });
+      }
+
+      if (ageSubGroups.length > 0) {
+        genderGroups.push({ gender: genderKey, label, ageSubGroups });
+      }
+    }
+
+    gameGroups.push({ gameName: gameKey, total, genderGroups });
+  }
+
+  return gameGroups;
 }
 
 export default function AdminDashboard({ onBack }: Props) {
@@ -359,19 +420,7 @@ export default function AdminDashboard({ onBack }: Props) {
     );
   });
 
-  const gameGroups: { gameName: string; rows: Registration[] }[] = [];
-  const gameMap = new Map<string, { gameName: string; rows: Registration[] }>();
-  for (const r of filtered) {
-    const key = r.game.toLowerCase();
-    if (!gameMap.has(key)) gameMap.set(key, { gameName: r.game, rows: [] });
-    gameMap.get(key)!.rows.push(r);
-  }
-  for (const entry of gameMap.values()) {
-    entry.rows.sort((a, b) => a.studentName.localeCompare(b.studentName));
-    gameGroups.push(entry);
-  }
-  gameGroups.sort((a, b) => a.gameName.localeCompare(b.gameName));
-
+  const gameGroups = buildGameGroups(filtered);
   let rowCounter = 0;
 
   return (
@@ -571,9 +620,6 @@ export default function AdminDashboard({ onBack }: Props) {
                         ID
                       </TableHead>
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
-                        Game
-                      </TableHead>
-                      <TableHead className="font-bold uppercase text-xs tracking-wider">
                         Adm. No
                       </TableHead>
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
@@ -583,10 +629,10 @@ export default function AdminDashboard({ onBack }: Props) {
                         Class
                       </TableHead>
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
-                        Gender
+                        DOB
                       </TableHead>
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
-                        Age Group
+                        Mobile No
                       </TableHead>
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
                         Food
@@ -597,95 +643,153 @@ export default function AdminDashboard({ onBack }: Props) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {gameGroups.map((group) => (
+                    {gameGroups.map((gameGroup) => (
                       <>
-                        <TableRow key={`group-${group.gameName}`}>
+                        {/* Game header */}
+                        <TableRow key={`game-${gameGroup.gameName}`}>
                           <TableCell
-                            colSpan={9}
-                            className="bg-primary/10 text-primary font-bold text-sm uppercase tracking-wider py-2 px-4"
+                            colSpan={8}
+                            className="bg-primary/15 text-primary font-bold text-sm uppercase tracking-wider py-2.5 px-4"
                           >
-                            🏅 {group.gameName.toUpperCase()} &mdash;{" "}
-                            {group.rows.length} student
-                            {group.rows.length !== 1 ? "s" : ""}
+                            🏅 {gameGroup.gameName} &mdash; {gameGroup.total}{" "}
+                            student{gameGroup.total !== 1 ? "s" : ""}
                           </TableCell>
                         </TableRow>
-                        {group.rows.map((reg) => {
-                          rowCounter += 1;
-                          const idx = rowCounter;
-                          return (
+                        {gameGroup.genderGroups.map((genderGroup) => (
+                          <>
+                            {/* Gender sub-header */}
                             <TableRow
-                              key={reg.id.toString()}
-                              className="hover:bg-accent/30 cursor-pointer transition-colors"
-                              onClick={() => setSelected(reg)}
-                              data-ocid={`admin.row.item.${idx}`}
+                              key={`gender-${gameGroup.gameName}-${genderGroup.gender}`}
                             >
-                              <TableCell className="font-mono font-bold text-primary">
-                                #{reg.id.toString()}
-                              </TableCell>
-                              <TableCell>{reg.game}</TableCell>
-                              <TableCell className="font-mono text-sm">
-                                {reg.admissionNumber}
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {reg.studentName}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">
-                                  {reg.studentClass}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{reg.gender}</TableCell>
-                              <TableCell>{reg.ageGroup}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    reg.food === "Veg" ? "default" : "outline"
-                                  }
-                                  className={
-                                    reg.food === "Veg"
-                                      ? "bg-green-100 text-green-700 border-green-200"
-                                      : "text-orange-700 border-orange-200"
-                                  }
-                                >
-                                  {reg.food}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-primary hover:text-primary/80 text-xs font-bold uppercase"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelected(reg);
-                                  }}
-                                >
-                                  View
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-blue-600 hover:text-blue-700 text-xs font-bold uppercase ml-1"
-                                  onClick={(e) => handleEditOpen(e, reg)}
-                                  data-ocid={`admin.edit_button.${idx}`}
-                                >
-                                  <Pencil className="w-3 h-3 mr-1" />
-                                  Edit
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:text-destructive/80 text-xs font-bold uppercase ml-1"
-                                  onClick={(e) => handleDelete(e, reg)}
-                                  disabled={deletingId === reg.id}
-                                >
-                                  <Trash2 className="w-3 h-3 mr-1" />
-                                  {deletingId === reg.id ? "..." : "Del"}
-                                </Button>
+                              <TableCell
+                                colSpan={8}
+                                className={`font-bold text-xs uppercase tracking-wider py-1.5 px-6 ${
+                                  genderGroup.gender === "B"
+                                    ? "bg-blue-100 text-blue-800 border-l-4 border-blue-500"
+                                    : "bg-pink-100 text-pink-800 border-l-4 border-pink-500"
+                                }`}
+                              >
+                                {genderGroup.gender === "B" ? "👦" : "👧"}{" "}
+                                {genderGroup.label}
                               </TableCell>
                             </TableRow>
-                          );
-                        })}
+                            {genderGroup.ageSubGroups.map((ageSubGroup) => (
+                              <>
+                                {/* Age group sub-header */}
+                                <TableRow
+                                  key={`age-${gameGroup.gameName}-${genderGroup.gender}-${ageSubGroup.ageGroup}`}
+                                >
+                                  <TableCell
+                                    colSpan={8}
+                                    className={`text-xs font-semibold uppercase tracking-wider py-1 px-10 ${
+                                      genderGroup.gender === "B"
+                                        ? "bg-blue-50 text-blue-700"
+                                        : "bg-pink-50 text-pink-700"
+                                    }`}
+                                  >
+                                    {ageSubGroup.ageGroup} —{" "}
+                                    {ageSubGroup.rows.length} student
+                                    {ageSubGroup.rows.length !== 1 ? "s" : ""}
+                                  </TableCell>
+                                </TableRow>
+                                {ageSubGroup.rows.map((reg) => {
+                                  rowCounter += 1;
+                                  const idx = rowCounter;
+                                  return (
+                                    <TableRow
+                                      key={reg.id.toString()}
+                                      className={`cursor-pointer transition-colors ${
+                                        genderGroup.gender === "B"
+                                          ? "hover:bg-blue-50/60"
+                                          : "hover:bg-pink-50/60"
+                                      }`}
+                                      onClick={() => setSelected(reg)}
+                                      data-ocid={`admin.row.item.${idx}`}
+                                    >
+                                      <TableCell className="font-mono font-bold text-primary">
+                                        #{reg.id.toString()}
+                                      </TableCell>
+                                      <TableCell className="font-mono text-sm">
+                                        {reg.admissionNumber}
+                                      </TableCell>
+                                      <TableCell className="font-medium">
+                                        {reg.studentName}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant="secondary">
+                                          {reg.studentClass}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-sm">
+                                        {formatDate(
+                                          reg.dobDate,
+                                          reg.dobMonth,
+                                          reg.dobYear,
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-sm">
+                                        {reg.mobileNo}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge
+                                          variant={
+                                            reg.food === "Veg"
+                                              ? "default"
+                                              : "outline"
+                                          }
+                                          className={
+                                            reg.food === "Veg"
+                                              ? "bg-green-100 text-green-700 border-green-200"
+                                              : "text-orange-700 border-orange-200"
+                                          }
+                                        >
+                                          {reg.food}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-primary hover:text-primary/80 text-xs font-bold uppercase"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelected(reg);
+                                          }}
+                                        >
+                                          View
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-blue-600 hover:text-blue-700 text-xs font-bold uppercase ml-1"
+                                          onClick={(e) =>
+                                            handleEditOpen(e, reg)
+                                          }
+                                          data-ocid={`admin.edit_button.${idx}`}
+                                        >
+                                          <Pencil className="w-3 h-3 mr-1" />
+                                          Edit
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="text-destructive hover:text-destructive/80 text-xs font-bold uppercase ml-1"
+                                          onClick={(e) => handleDelete(e, reg)}
+                                          disabled={deletingId === reg.id}
+                                        >
+                                          <Trash2 className="w-3 h-3 mr-1" />
+                                          {deletingId === reg.id
+                                            ? "..."
+                                            : "Del"}
+                                        </Button>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </>
+                            ))}
+                          </>
+                        ))}
                       </>
                     ))}
                   </TableBody>
@@ -725,7 +829,10 @@ export default function AdminDashboard({ onBack }: Props) {
                   selected.dobYear,
                 )}
               />
-              <DetailRow label="Gender" value={selected.gender} />
+              <DetailRow
+                label="Gender"
+                value={selected.gender === "B" ? "Boy" : "Girl"}
+              />
               <DetailRow label="Age Group" value={selected.ageGroup} />
               <DetailRow label="Class" value={selected.studentClass} />
               <DetailRow label="Mobile No" value={selected.mobileNo} />

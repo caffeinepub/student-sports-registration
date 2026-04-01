@@ -12,17 +12,18 @@ import {
 import {
   Calendar,
   GraduationCap,
+  ImagePlus,
   Loader2,
   Phone,
   Search,
   Shield,
   Shirt,
-  Trophy,
   User,
   Utensils,
+  X,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useActor } from "../hooks/useActor";
 import { useSubmitRegistration } from "../hooks/useQueries";
@@ -175,6 +176,14 @@ export default function RegistrationPage({
 }: Props) {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [passportPhoto, setPassportPhoto] = useState<File | null>(null);
+  const [passportPhotoPreview, setPassportPhotoPreview] = useState<
+    string | null
+  >(null);
+  const [passportPhotoError, setPassportPhotoError] = useState<string | null>(
+    null,
+  );
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const { mutateAsync, isPending } = useSubmitRegistration();
   const { actor, isFetching: actorLoading } = useActor();
 
@@ -183,6 +192,29 @@ export default function RegistrationPage({
   const set = (k: keyof FormData, v: string) => {
     setForm((prev) => ({ ...prev, [k]: v }));
     if (errors[k]) setErrors((prev) => ({ ...prev, [k]: undefined }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      setPassportPhotoError("File size must not exceed 1MB.");
+      e.target.value = "";
+      return;
+    }
+    setPassportPhotoError(null);
+    setPassportPhoto(file);
+    const url = URL.createObjectURL(file);
+    if (passportPhotoPreview) URL.revokeObjectURL(passportPhotoPreview);
+    setPassportPhotoPreview(url);
+  };
+
+  const handleRemovePhoto = () => {
+    if (passportPhotoPreview) URL.revokeObjectURL(passportPhotoPreview);
+    setPassportPhoto(null);
+    setPassportPhotoPreview(null);
+    setPassportPhotoError(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -264,14 +296,6 @@ export default function RegistrationPage({
             >
               Register
             </a>
-            <button
-              type="button"
-              onClick={onAdminClick}
-              className="text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-primary transition-colors"
-              data-ocid="nav.admin_link"
-            >
-              Admin Dashboard
-            </button>
           </nav>
           <div className="flex items-center gap-2">
             <Button
@@ -794,6 +818,96 @@ export default function RegistrationPage({
                   </div>
                 </RadioGroup>
                 <ErrorMsg msg={errors.food} />
+              </div>
+
+              {/* Passport Size Photo */}
+              <div className="mt-8">
+                <div className="flex items-center gap-3 mb-5">
+                  <ImagePlus className="w-5 h-5 text-primary" />
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">
+                    Passport Size Photo
+                  </h3>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <div className="flex flex-col sm:flex-row items-start gap-6">
+                  {/* Preview Box */}
+                  <button
+                    type="button"
+                    className="w-[100px] h-[120px] rounded-lg border-2 border-dashed border-border bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => photoInputRef.current?.click()}
+                    data-ocid="photo.dropzone"
+                  >
+                    {passportPhotoPreview ? (
+                      <img
+                        src={passportPhotoPreview}
+                        alt="Selected passport"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 p-2 text-center">
+                        <ImagePlus className="w-7 h-7 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground leading-tight">
+                          Click to upload
+                        </span>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Upload Controls */}
+                  <div className="flex flex-col gap-3 flex-1">
+                    <div className="space-y-1">
+                      <FieldLabel>Passport Size Photo</FieldLabel>
+                      <p className="text-xs text-muted-foreground">
+                        Upload a recent passport size photo. Max size: 1MB.
+                      </p>
+                    </div>
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                      data-ocid="photo.upload_button"
+                    />
+                    {passportPhoto ? (
+                      <div className="flex items-center gap-3 bg-secondary rounded-lg px-3 py-2 border border-border">
+                        <ImagePlus className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-xs text-foreground truncate flex-1">
+                          {passportPhoto.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleRemovePhoto}
+                          className="text-xs text-destructive font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
+                          data-ocid="photo.delete_button"
+                        >
+                          <X className="w-3 h-3" />
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="self-start rounded-full text-xs font-bold uppercase tracking-wider"
+                        onClick={() => photoInputRef.current?.click()}
+                        data-ocid="photo.upload_button"
+                      >
+                        <ImagePlus className="w-4 h-4 mr-1" />
+                        Choose Photo
+                      </Button>
+                    )}
+                    {passportPhotoError && (
+                      <p
+                        className="text-xs text-destructive mt-1"
+                        data-ocid="photo.error_state"
+                      >
+                        {passportPhotoError}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Submit */}
