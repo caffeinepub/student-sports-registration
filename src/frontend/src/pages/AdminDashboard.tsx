@@ -527,11 +527,11 @@ export default function AdminDashboard({ onBack }: Props) {
                     </button>
                   </div>
                 </div>
-                loginError && (
-                <p className="text-sm text-destructive font-medium">
-                  {loginError}
-                </p>
-                )
+                {loginError && (
+                  <p className="text-sm text-destructive font-medium">
+                    {loginError}
+                  </p>
+                )}
                 <Button
                   type="submit"
                   className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest"

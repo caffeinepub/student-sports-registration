@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import {
   Calendar,
+  FileText,
   GraduationCap,
   ImagePlus,
   Loader2,
@@ -184,6 +185,12 @@ export default function RegistrationPage({
     null,
   );
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const nocInputRef = useRef<HTMLInputElement>(null);
+  const aadharInputRef = useRef<HTMLInputElement>(null);
+  const marksheetInputRef = useRef<HTMLInputElement>(null);
+  const [nocDoc, setNocDoc] = useState<File | null>(null);
+  const [aadharDoc, setAadharDoc] = useState<File | null>(null);
+  const [marksheetDoc, setMarksheetDoc] = useState<File | null>(null);
   const { mutateAsync, isPending } = useSubmitRegistration();
   const { actor, isFetching: actorLoading } = useActor();
 
@@ -217,6 +224,26 @@ export default function RegistrationPage({
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
+  const makeDocHandler =
+    (
+      setter: (f: File | null) => void,
+      _ref: React.RefObject<HTMLInputElement | null>,
+    ) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setter(file);
+    };
+
+  const makeDocRemover =
+    (
+      setter: (f: File | null) => void,
+      ref: React.RefObject<HTMLInputElement | null>,
+    ) =>
+    () => {
+      setter(null);
+      if (ref.current) ref.current.value = "";
+    };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate(form);
@@ -910,6 +937,88 @@ export default function RegistrationPage({
                 </div>
               </div>
 
+              {/* Document Uploads */}
+              <div className="mt-8 space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">
+                    Documents Upload
+                  </h3>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                {[
+                  {
+                    label: "NOC / Medical / Risk Certificate",
+                    ref: nocInputRef,
+                    state: nocDoc,
+                    setter: setNocDoc,
+                    accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx",
+                  },
+                  {
+                    label: "Aadhar Copy",
+                    ref: aadharInputRef,
+                    state: aadharDoc,
+                    setter: setAadharDoc,
+                    accept: ".pdf,.jpg,.jpeg,.png",
+                  },
+                  {
+                    label: "Marksheet",
+                    ref: marksheetInputRef,
+                    state: marksheetDoc,
+                    setter: setMarksheetDoc,
+                    accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx",
+                  },
+                ].map(({ label, ref, state, setter, accept }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-4 bg-secondary rounded-lg px-4 py-3 border border-border"
+                  >
+                    <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-foreground">
+                        {label}
+                      </p>
+                      {state ? (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {state.name}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          No file chosen
+                        </p>
+                      )}
+                    </div>
+                    <input
+                      ref={ref}
+                      type="file"
+                      accept={accept}
+                      className="hidden"
+                      onChange={makeDocHandler(setter, ref)}
+                    />
+                    {state ? (
+                      <button
+                        type="button"
+                        className="text-xs text-destructive font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity flex-shrink-0"
+                        onClick={makeDocRemover(setter, ref)}
+                      >
+                        <X className="w-3 h-3" />
+                        Remove
+                      </button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full text-xs font-bold uppercase tracking-wider flex-shrink-0"
+                        onClick={() => ref.current?.click()}
+                      >
+                        Choose File
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
               {/* Submit */}
               <div className="mt-10">
                 <Button
