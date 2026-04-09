@@ -26,10 +26,6 @@ export interface RegistrationInput {
     studentClass: string;
     ageGroup: string;
 }
-export interface UserProfile {
-    name: string;
-}
-export type Time = bigint;
 export interface Registration {
     id: bigint;
     tShirtShortsSize: string;
@@ -51,37 +47,12 @@ export interface Registration {
     studentClass: string;
     ageGroup: string;
 }
-export interface InviteCode {
-    created: Time;
-    code: string;
-    used: boolean;
-}
-export interface RSVP {
-    name: string;
-    inviteCode: string;
-    timestamp: Time;
-    attending: boolean;
-}
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
-}
 export interface backendInterface {
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteRegistration(id: bigint): Promise<boolean>;
-    generateInviteCode(): Promise<string>;
-    getAllRSVPs(): Promise<Array<RSVP>>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
-    getInviteCodes(): Promise<Array<InviteCode>>;
-    getRegistrationByAdmissionNumber(admissionNumber: string): Promise<[] | [Registration]>;
+    getRegistrationByAdmissionNumber(admissionNumber: string): Promise<Registration | null>;
     getRegistrationCount(): Promise<bigint>;
     getRegistrations(): Promise<Array<Registration>>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
-    submitRSVP(name: string, attending: boolean, inviteCode: string): Promise<void>;
     submitRegistration(input: RegistrationInput): Promise<bigint>;
     updateRegistration(id: bigint, input: RegistrationInput): Promise<boolean>;
 }

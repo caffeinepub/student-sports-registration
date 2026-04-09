@@ -1,0 +1,52 @@
+type RegistrationInput = 
+ record {
+   admissionNumber: text;
+   ageGroup: text;
+   blazerSize: text;
+   dobDate: nat;
+   dobMonth: nat;
+   dobYear: nat;
+   fatherName: text;
+   food: text;
+   game: text;
+   gender: text;
+   mobileNo: text;
+   motherName: text;
+   shoeSize: text;
+   studentClass: text;
+   studentName: text;
+   tShirtShortsSize: text;
+   trackSuitSize: text;
+ };
+type Registration = 
+ record {
+   admissionNumber: text;
+   ageGroup: text;
+   blazerSize: text;
+   dobDate: nat;
+   dobMonth: nat;
+   dobYear: nat;
+   fatherName: text;
+   food: text;
+   game: text;
+   gender: text;
+   id: nat;
+   mobileNo: text;
+   motherName: text;
+   shoeSize: text;
+   studentClass: text;
+   studentName: text;
+   tShirtShortsSize: text;
+   timestamp: int;
+   trackSuitSize: text;
+ };
+service : {
+  deleteRegistration: (id: nat) -> (bool);
+  getRegistrationByAdmissionNumber: (admissionNumber: text) ->
+   (opt Registration) query;
+  getRegistrationCount: () -> (nat) query;
+  getRegistrations: () -> (vec Registration) query;
+  isCallerAdmin: () -> (bool) query;
+  submitRegistration: (input: RegistrationInput) -> (nat);
+  updateRegistration: (id: nat, input: RegistrationInput) -> (bool);
+}

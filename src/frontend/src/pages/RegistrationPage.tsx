@@ -11,9 +11,7 @@ import {
 } from "@/components/ui/select";
 import {
   Calendar,
-  FileText,
   GraduationCap,
-  ImagePlus,
   Loader2,
   Phone,
   Search,
@@ -21,10 +19,9 @@ import {
   Shirt,
   User,
   Utensils,
-  X,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useActor } from "../hooks/useActor";
 import { useSubmitRegistration } from "../hooks/useQueries";
@@ -66,19 +63,27 @@ const CLOTHING_SIZES = [
 ];
 const AGE_GROUPS = ["U14", "U17", "U19"];
 const CLASSES = [
-  "Class 1",
-  "Class 2",
-  "Class 3",
-  "Class 4",
-  "Class 5",
-  "Class 6",
-  "Class 7",
-  "Class 8",
-  "Class 9",
-  "Class 10",
-  "Class 11",
-  "Class 12",
-  "Others",
+  "6A",
+  "6B",
+  "6C",
+  "7A",
+  "7B",
+  "7C",
+  "8A",
+  "8B",
+  "8C",
+  "9A",
+  "9B",
+  "9C",
+  "10A",
+  "10B",
+  "10C",
+  "11A",
+  "11B",
+  "11C",
+  "12A",
+  "12B",
+  "12C",
 ];
 const SHOE_SIZES = Array.from({ length: 13 }, (_, i) => String(i + 1));
 
@@ -177,20 +182,6 @@ export default function RegistrationPage({
 }: Props) {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
-  const [passportPhoto, setPassportPhoto] = useState<File | null>(null);
-  const [passportPhotoPreview, setPassportPhotoPreview] = useState<
-    string | null
-  >(null);
-  const [passportPhotoError, setPassportPhotoError] = useState<string | null>(
-    null,
-  );
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const nocInputRef = useRef<HTMLInputElement>(null);
-  const aadharInputRef = useRef<HTMLInputElement>(null);
-  const marksheetInputRef = useRef<HTMLInputElement>(null);
-  const [nocDoc, setNocDoc] = useState<File | null>(null);
-  const [aadharDoc, setAadharDoc] = useState<File | null>(null);
-  const [marksheetDoc, setMarksheetDoc] = useState<File | null>(null);
   const { mutateAsync, isPending } = useSubmitRegistration();
   const { actor, isFetching: actorLoading } = useActor();
 
@@ -201,49 +192,6 @@ export default function RegistrationPage({
     if (errors[k]) setErrors((prev) => ({ ...prev, [k]: undefined }));
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 1024 * 1024) {
-      setPassportPhotoError("File size must not exceed 1MB.");
-      e.target.value = "";
-      return;
-    }
-    setPassportPhotoError(null);
-    setPassportPhoto(file);
-    const url = URL.createObjectURL(file);
-    if (passportPhotoPreview) URL.revokeObjectURL(passportPhotoPreview);
-    setPassportPhotoPreview(url);
-  };
-
-  const handleRemovePhoto = () => {
-    if (passportPhotoPreview) URL.revokeObjectURL(passportPhotoPreview);
-    setPassportPhoto(null);
-    setPassportPhotoPreview(null);
-    setPassportPhotoError(null);
-    if (photoInputRef.current) photoInputRef.current.value = "";
-  };
-
-  const makeDocHandler =
-    (
-      setter: (f: File | null) => void,
-      _ref: React.RefObject<HTMLInputElement | null>,
-    ) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setter(file);
-    };
-
-  const makeDocRemover =
-    (
-      setter: (f: File | null) => void,
-      ref: React.RefObject<HTMLInputElement | null>,
-    ) =>
-    () => {
-      setter(null);
-      if (ref.current) ref.current.value = "";
-    };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate(form);
@@ -847,178 +795,6 @@ export default function RegistrationPage({
                 <ErrorMsg msg={errors.food} />
               </div>
 
-              {/* Passport Size Photo */}
-              <div className="mt-8">
-                <div className="flex items-center gap-3 mb-5">
-                  <ImagePlus className="w-5 h-5 text-primary" />
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">
-                    Passport Size Photo
-                  </h3>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
-                <div className="flex flex-col sm:flex-row items-start gap-6">
-                  {/* Preview Box */}
-                  <button
-                    type="button"
-                    className="w-[100px] h-[120px] rounded-lg border-2 border-dashed border-border bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => photoInputRef.current?.click()}
-                    data-ocid="photo.dropzone"
-                  >
-                    {passportPhotoPreview ? (
-                      <img
-                        src={passportPhotoPreview}
-                        alt="Selected passport"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 p-2 text-center">
-                        <ImagePlus className="w-7 h-7 text-muted-foreground" />
-                        <span className="text-[10px] text-muted-foreground leading-tight">
-                          Click to upload
-                        </span>
-                      </div>
-                    )}
-                  </button>
-
-                  {/* Upload Controls */}
-                  <div className="flex flex-col gap-3 flex-1">
-                    <div className="space-y-1">
-                      <FieldLabel>Passport Size Photo</FieldLabel>
-                      <p className="text-xs text-muted-foreground">
-                        Upload a recent passport size photo. Max size: 1MB.
-                      </p>
-                    </div>
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePhotoChange}
-                      data-ocid="photo.upload_button"
-                    />
-                    {passportPhoto ? (
-                      <div className="flex items-center gap-3 bg-secondary rounded-lg px-3 py-2 border border-border">
-                        <ImagePlus className="w-4 h-4 text-primary flex-shrink-0" />
-                        <span className="text-xs text-foreground truncate flex-1">
-                          {passportPhoto.name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleRemovePhoto}
-                          className="text-xs text-destructive font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity"
-                          data-ocid="photo.delete_button"
-                        >
-                          <X className="w-3 h-3" />
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="self-start rounded-full text-xs font-bold uppercase tracking-wider"
-                        onClick={() => photoInputRef.current?.click()}
-                        data-ocid="photo.upload_button"
-                      >
-                        <ImagePlus className="w-4 h-4 mr-1" />
-                        Choose Photo
-                      </Button>
-                    )}
-                    {passportPhotoError && (
-                      <p
-                        className="text-xs text-destructive mt-1"
-                        data-ocid="photo.error_state"
-                      >
-                        {passportPhotoError}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Document Uploads */}
-              <div className="mt-8 space-y-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <FileText className="w-5 h-5 text-primary" />
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">
-                    Documents Upload
-                  </h3>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
-
-                {[
-                  {
-                    label: "NOC / Medical / Risk Certificate",
-                    ref: nocInputRef,
-                    state: nocDoc,
-                    setter: setNocDoc,
-                    accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx",
-                  },
-                  {
-                    label: "Aadhar Copy",
-                    ref: aadharInputRef,
-                    state: aadharDoc,
-                    setter: setAadharDoc,
-                    accept: ".pdf,.jpg,.jpeg,.png",
-                  },
-                  {
-                    label: "Marksheet",
-                    ref: marksheetInputRef,
-                    state: marksheetDoc,
-                    setter: setMarksheetDoc,
-                    accept: ".pdf,.jpg,.jpeg,.png,.doc,.docx",
-                  },
-                ].map(({ label, ref, state, setter, accept }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-4 bg-secondary rounded-lg px-4 py-3 border border-border"
-                  >
-                    <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-foreground">
-                        {label}
-                      </p>
-                      {state ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {state.name}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          No file chosen
-                        </p>
-                      )}
-                    </div>
-                    <input
-                      ref={ref}
-                      type="file"
-                      accept={accept}
-                      className="hidden"
-                      onChange={makeDocHandler(setter, ref)}
-                    />
-                    {state ? (
-                      <button
-                        type="button"
-                        className="text-xs text-destructive font-semibold flex items-center gap-1 hover:opacity-80 transition-opacity flex-shrink-0"
-                        onClick={makeDocRemover(setter, ref)}
-                      >
-                        <X className="w-3 h-3" />
-                        Remove
-                      </button>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full text-xs font-bold uppercase tracking-wider flex-shrink-0"
-                        onClick={() => ref.current?.click()}
-                      >
-                        Choose File
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
               {/* Submit */}
               <div className="mt-10">
                 <Button

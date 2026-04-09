@@ -10,17 +10,6 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface InviteCode {
-  'created' : Time,
-  'code' : string,
-  'used' : boolean,
-}
-export interface RSVP {
-  'name' : string,
-  'inviteCode' : string,
-  'timestamp' : Time,
-  'attending' : boolean,
-}
 export interface Registration {
   'id' : bigint,
   'tShirtShortsSize' : string,
@@ -61,27 +50,15 @@ export interface RegistrationInput {
   'studentClass' : string,
   'ageGroup' : string,
 }
-export type Time = bigint;
-export interface UserProfile { 'name' : string }
-export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
 export interface _SERVICE {
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteRegistration' : ActorMethod<[bigint], boolean>,
-  'generateInviteCode' : ActorMethod<[], string>,
-  'getAllRSVPs' : ActorMethod<[], Array<RSVP>>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getInviteCodes' : ActorMethod<[], Array<InviteCode>>,
-  'getRegistrationByAdmissionNumber' : ActorMethod<[string], [] | [Registration]>,
+  'getRegistrationByAdmissionNumber' : ActorMethod<
+    [string],
+    [] | [Registration]
+  >,
   'getRegistrationCount' : ActorMethod<[], bigint>,
   'getRegistrations' : ActorMethod<[], Array<Registration>>,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'submitRSVP' : ActorMethod<[string, boolean, string], undefined>,
   'submitRegistration' : ActorMethod<[RegistrationInput], bigint>,
   'updateRegistration' : ActorMethod<[bigint, RegistrationInput], boolean>,
 }

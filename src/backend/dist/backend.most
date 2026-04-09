@@ -1,0 +1,42 @@
+// Version: 1.0.0
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Registration__73043451 =
+  {
+    admissionNumber : Text;
+    ageGroup : Text;
+    blazerSize : Text;
+    dobDate : Nat;
+    dobMonth : Nat;
+    dobYear : Nat;
+    fatherName : Text;
+    food : Text;
+    game : Text;
+    gender : Text;
+    id : Nat;
+    mobileNo : Text;
+    motherName : Text;
+    shoeSize : Text;
+    studentClass : Text;
+    studentName : Text;
+    tShirtShortsSize : Text;
+    timestamp : Int;
+    trackSuitSize : Text
+  };
+actor {
+  stable admissionNumbers :
+    {var root : Node__46230540<Text, Nat>; var size : Nat__490723111};
+  stable var nextRegistrationId : Nat;
+  stable registrations :
+    {
+      var root : Node__46230540<Nat, Registration__73043451>;
+      var size : Nat__490723111
+    }
+};

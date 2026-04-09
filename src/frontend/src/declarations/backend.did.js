@@ -8,24 +8,6 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
-});
-export const Time = IDL.Int;
-export const RSVP = IDL.Record({
-  'name' : IDL.Text,
-  'inviteCode' : IDL.Text,
-  'timestamp' : Time,
-  'attending' : IDL.Bool,
-});
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const InviteCode = IDL.Record({
-  'created' : Time,
-  'code' : IDL.Text,
-  'used' : IDL.Bool,
-});
 export const Registration = IDL.Record({
   'id' : IDL.Nat,
   'tShirtShortsSize' : IDL.Text,
@@ -68,25 +50,15 @@ export const RegistrationInput = IDL.Record({
 });
 
 export const idlService = IDL.Service({
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteRegistration' : IDL.Func([IDL.Nat], [IDL.Bool], []),
-  'generateInviteCode' : IDL.Func([], [IDL.Text], []),
-  'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
-  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
-  'getRegistrationByAdmissionNumber' : IDL.Func([IDL.Text], [IDL.Opt(Registration)], ['query']),
-  'getRegistrationCount' : IDL.Func([], [IDL.Nat], ['query']),
-  'getRegistrations' : IDL.Func([], [IDL.Vec(Registration)], ['query']),
-  'getUserProfile' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Opt(UserProfile)],
+  'getRegistrationByAdmissionNumber' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(Registration)],
       ['query'],
     ),
+  'getRegistrationCount' : IDL.Func([], [IDL.Nat], ['query']),
+  'getRegistrations' : IDL.Func([], [IDL.Vec(Registration)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
   'submitRegistration' : IDL.Func([RegistrationInput], [IDL.Nat], []),
   'updateRegistration' : IDL.Func([IDL.Nat, RegistrationInput], [IDL.Bool], []),
 });
@@ -94,24 +66,6 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
-  });
-  const Time = IDL.Int;
-  const RSVP = IDL.Record({
-    'name' : IDL.Text,
-    'inviteCode' : IDL.Text,
-    'timestamp' : Time,
-    'attending' : IDL.Bool,
-  });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const InviteCode = IDL.Record({
-    'created' : Time,
-    'code' : IDL.Text,
-    'used' : IDL.Bool,
-  });
   const Registration = IDL.Record({
     'id' : IDL.Nat,
     'tShirtShortsSize' : IDL.Text,
@@ -154,27 +108,21 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteRegistration' : IDL.Func([IDL.Nat], [IDL.Bool], []),
-    'generateInviteCode' : IDL.Func([], [IDL.Text], []),
-    'getAllRSVPs' : IDL.Func([], [IDL.Vec(RSVP)], ['query']),
-    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getInviteCodes' : IDL.Func([], [IDL.Vec(InviteCode)], ['query']),
-    'getRegistrationByAdmissionNumber' : IDL.Func([IDL.Text], [IDL.Opt(Registration)], ['query']),
-    'getRegistrationCount' : IDL.Func([], [IDL.Nat], ['query']),
-    'getRegistrations' : IDL.Func([], [IDL.Vec(Registration)], ['query']),
-    'getUserProfile' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Opt(UserProfile)],
+    'getRegistrationByAdmissionNumber' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(Registration)],
         ['query'],
       ),
+    'getRegistrationCount' : IDL.Func([], [IDL.Nat], ['query']),
+    'getRegistrations' : IDL.Func([], [IDL.Vec(Registration)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'submitRSVP' : IDL.Func([IDL.Text, IDL.Bool, IDL.Text], [], []),
     'submitRegistration' : IDL.Func([RegistrationInput], [IDL.Nat], []),
-    'updateRegistration' : IDL.Func([IDL.Nat, RegistrationInput], [IDL.Bool], []),
+    'updateRegistration' : IDL.Func(
+        [IDL.Nat, RegistrationInput],
+        [IDL.Bool],
+        [],
+      ),
   });
 };
 

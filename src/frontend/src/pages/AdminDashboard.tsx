@@ -1029,10 +1029,43 @@ export default function AdminDashboard({ onBack }: Props) {
                 <Label className="text-xs font-bold uppercase tracking-wider">
                   Class
                 </Label>
-                <Input
+                <Select
                   value={editForm.studentClass}
-                  onChange={(e) => setField("studentClass", e.target.value)}
-                />
+                  onValueChange={(v) => setField("studentClass", v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[
+                      "6A",
+                      "6B",
+                      "6C",
+                      "7A",
+                      "7B",
+                      "7C",
+                      "8A",
+                      "8B",
+                      "8C",
+                      "9A",
+                      "9B",
+                      "9C",
+                      "10A",
+                      "10B",
+                      "10C",
+                      "11A",
+                      "11B",
+                      "11C",
+                      "12A",
+                      "12B",
+                      "12C",
+                    ].map((cls) => (
+                      <SelectItem key={cls} value={cls}>
+                        {cls}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider">
