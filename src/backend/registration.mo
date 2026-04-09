@@ -21,6 +21,7 @@ module {
     trackSuitSize : Text;
     blazerSize : Text;
     food : Text;
+    photoUrl : ?Text;
     timestamp : Int;
   };
 

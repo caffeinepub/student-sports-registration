@@ -12,6 +12,7 @@ type RegistrationInput =
    gender: text;
    mobileNo: text;
    motherName: text;
+   photoUrl: opt text;
    shoeSize: text;
    studentClass: text;
    studentName: text;
@@ -33,6 +34,7 @@ type Registration =
    id: nat;
    mobileNo: text;
    motherName: text;
+   photoUrl: opt text;
    shoeSize: text;
    studentClass: text;
    studentName: text;

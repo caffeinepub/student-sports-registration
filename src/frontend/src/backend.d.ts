@@ -19,6 +19,7 @@ export interface RegistrationInput {
     blazerSize: string;
     shoeSize: string;
     motherName: string;
+    photoUrl?: string;
     admissionNumber: string;
     fatherName: string;
     gender: string;
@@ -39,6 +40,7 @@ export interface Registration {
     blazerSize: string;
     shoeSize: string;
     motherName: string;
+    photoUrl?: string;
     admissionNumber: string;
     fatherName: string;
     gender: string;

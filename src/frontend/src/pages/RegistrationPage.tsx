@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import {
   Calendar,
+  Camera,
   GraduationCap,
   Loader2,
   Phone,
@@ -19,12 +20,14 @@ import {
   Shirt,
   User,
   Utensils,
+  X,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useActor } from "../hooks/useActor";
 import { useSubmitRegistration } from "../hooks/useQueries";
+import { useUploadPhoto } from "../hooks/useUploadPhoto";
 
 interface Props {
   onSuccess: (id: bigint) => void;
@@ -175,6 +178,14 @@ function ErrorMsg({ msg }: { msg?: string }) {
   );
 }
 
+const ACCEPTED_PHOTO_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
+const MAX_PHOTO_SIZE_BYTES = 1 * 1024 * 1024; // 1MB
+
 export default function RegistrationPage({
   onSuccess,
   onAdminClick,
@@ -182,14 +193,46 @@ export default function RegistrationPage({
 }: Props) {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const { mutateAsync, isPending } = useSubmitRegistration();
   const { actor, isFetching: actorLoading } = useActor();
+  const { uploadPhoto, isUploading } = useUploadPhoto();
 
-  const isSubmitDisabled = isPending || actorLoading || !actor;
+  const isSubmitDisabled = isPending || actorLoading || !actor || isUploading;
 
   const set = (k: keyof FormData, v: string) => {
     setForm((prev) => ({ ...prev, [k]: v }));
     if (errors[k]) setErrors((prev) => ({ ...prev, [k]: undefined }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError(null);
+    if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
+      setPhotoError("Only JPEG, PNG, or WebP images are accepted.");
+      if (photoInputRef.current) photoInputRef.current.value = "";
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      setPhotoError("File size must not exceed 1MB.");
+      if (photoInputRef.current) photoInputRef.current.value = "";
+      return;
+    }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -203,6 +246,15 @@ export default function RegistrationPage({
       );
       firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
+    }
+    let photoUrl: string | undefined;
+    if (photoFile) {
+      try {
+        photoUrl = await uploadPhoto(photoFile);
+      } catch {
+        toast.error("Photo upload failed. Please try again.");
+        return;
+      }
     }
     try {
       const id = await mutateAsync({
@@ -223,6 +275,7 @@ export default function RegistrationPage({
         trackSuitSize: form.trackSuitSize,
         blazerSize: form.blazerSize,
         food: form.food,
+        ...(photoUrl ? { photoUrl } : {}),
       });
       onSuccess(id);
     } catch (err: unknown) {
@@ -795,6 +848,103 @@ export default function RegistrationPage({
                 <ErrorMsg msg={errors.food} />
               </div>
 
+              {/* Passport Size Photo Upload */}
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-primary" />
+                  <FieldLabel>Passport Size Photo</FieldLabel>
+                  <span className="text-xs text-muted-foreground font-normal normal-case tracking-normal">
+                    (Optional — max 1MB, JPEG/PNG/WebP)
+                  </span>
+                </div>
+                <div className="flex items-start gap-4 mt-2">
+                  {/* Preview box */}
+                  <button
+                    type="button"
+                    className="relative w-24 h-28 rounded-lg border-2 border-dashed border-border bg-secondary flex items-center justify-center shrink-0 cursor-pointer overflow-hidden"
+                    onClick={() =>
+                      !photoPreview && photoInputRef.current?.click()
+                    }
+                    aria-label="Upload passport photo"
+                    data-ocid="photo.preview_box"
+                  >
+                    {photoPreview ? (
+                      <img
+                        src={photoPreview}
+                        alt="Student portrait preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                        <Camera className="w-6 h-6" />
+                        <span className="text-xs text-center leading-tight">
+                          Click to upload
+                        </span>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Controls */}
+                  <div className="flex flex-col gap-2 justify-start pt-1">
+                    <Input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                      data-ocid="photo.file_input"
+                    />
+                    {!photoFile ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs font-semibold"
+                        onClick={() => photoInputRef.current?.click()}
+                        data-ocid="photo.choose_button"
+                      >
+                        <Camera className="w-3.5 h-3.5 mr-1.5" />
+                        Choose Photo
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs font-semibold text-destructive border-destructive/40 hover:bg-destructive/5"
+                        onClick={removePhoto}
+                        data-ocid="photo.remove_button"
+                      >
+                        <X className="w-3.5 h-3.5 mr-1.5" />
+                        Remove
+                      </Button>
+                    )}
+                    {photoFile && (
+                      <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                        {photoFile.name}
+                      </p>
+                    )}
+                    {isUploading && (
+                      <div
+                        className="flex items-center gap-1.5 text-xs text-primary"
+                        data-ocid="photo.upload_progress"
+                      >
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Uploading photo...
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {photoError && (
+                  <p
+                    className="text-xs text-destructive mt-1"
+                    data-ocid="photo.error_state"
+                  >
+                    {photoError}
+                  </p>
+                )}
+              </div>
+
               {/* Submit */}
               <div className="mt-10">
                 <Button
@@ -803,7 +953,12 @@ export default function RegistrationPage({
                   className="w-full rounded-full bg-primary text-primary-foreground font-bold uppercase tracking-widest text-sm py-6"
                   data-ocid="form.submit_button"
                 >
-                  {isPending ? (
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading Photo...
+                    </>
+                  ) : isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Submitting...

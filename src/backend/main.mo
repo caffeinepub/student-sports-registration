@@ -1,3 +1,4 @@
+import Array "mo:core/Array";
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Time "mo:core/Time";
@@ -30,6 +31,7 @@ actor {
     trackSuitSize : Text;
     blazerSize : Text;
     food : Text;
+    photoUrl : ?Text;
   };
 
   public shared func submitRegistration(input : RegistrationInput) : async Nat {

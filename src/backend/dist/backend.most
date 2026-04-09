@@ -23,6 +23,7 @@ type Registration__73043451 =
     id : Nat;
     mobileNo : Text;
     motherName : Text;
+    photoUrl : ?Text;
     shoeSize : Text;
     studentClass : Text;
     studentName : Text;

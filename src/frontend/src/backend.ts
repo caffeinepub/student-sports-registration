@@ -101,6 +101,7 @@ export interface RegistrationInput {
     blazerSize: string;
     shoeSize: string;
     motherName: string;
+    photoUrl?: string;
     admissionNumber: string;
     fatherName: string;
     gender: string;
@@ -121,6 +122,7 @@ export interface Registration {
     blazerSize: string;
     shoeSize: string;
     motherName: string;
+    photoUrl?: string;
     admissionNumber: string;
     fatherName: string;
     gender: string;
@@ -138,7 +140,7 @@ export interface backendInterface {
     submitRegistration(input: RegistrationInput): Promise<bigint>;
     updateRegistration(id: bigint, input: RegistrationInput): Promise<boolean>;
 }
-import type { Registration as _Registration } from "./declarations/backend.did.d.ts";
+import type { Registration as _Registration, RegistrationInput as _RegistrationInput } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async deleteRegistration(arg0: bigint): Promise<boolean> {
@@ -187,14 +189,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getRegistrations();
-                return result;
+                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getRegistrations();
-            return result;
+            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -214,34 +216,172 @@ export class Backend implements backendInterface {
     async submitRegistration(arg0: RegistrationInput): Promise<bigint> {
         if (this.processError) {
             try {
-                const result = await this.actor.submitRegistration(arg0);
+                const result = await this.actor.submitRegistration(to_candid_RegistrationInput_n6(this._uploadFile, this._downloadFile, arg0));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.submitRegistration(arg0);
+            const result = await this.actor.submitRegistration(to_candid_RegistrationInput_n6(this._uploadFile, this._downloadFile, arg0));
             return result;
         }
     }
     async updateRegistration(arg0: bigint, arg1: RegistrationInput): Promise<boolean> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateRegistration(arg0, arg1);
+                const result = await this.actor.updateRegistration(arg0, to_candid_RegistrationInput_n6(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateRegistration(arg0, arg1);
+            const result = await this.actor.updateRegistration(arg0, to_candid_RegistrationInput_n6(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
 }
+function from_candid_Registration_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Registration): Registration {
+    return from_candid_record_n3(_uploadFile, _downloadFile, value);
+}
 function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Registration]): Registration | null {
+    return value.length === 0 ? null : from_candid_Registration_n2(_uploadFile, _downloadFile, value[0]);
+}
+function from_candid_opt_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
+    tShirtShortsSize: string;
+    studentName: string;
+    dobMonth: bigint;
+    dobDate: bigint;
+    food: string;
+    game: string;
+    dobYear: bigint;
+    mobileNo: string;
+    blazerSize: string;
+    shoeSize: string;
+    motherName: string;
+    photoUrl: [] | [string];
+    admissionNumber: string;
+    fatherName: string;
+    gender: string;
+    timestamp: bigint;
+    trackSuitSize: string;
+    studentClass: string;
+    ageGroup: string;
+}): {
+    id: bigint;
+    tShirtShortsSize: string;
+    studentName: string;
+    dobMonth: bigint;
+    dobDate: bigint;
+    food: string;
+    game: string;
+    dobYear: bigint;
+    mobileNo: string;
+    blazerSize: string;
+    shoeSize: string;
+    motherName: string;
+    photoUrl?: string;
+    admissionNumber: string;
+    fatherName: string;
+    gender: string;
+    timestamp: bigint;
+    trackSuitSize: string;
+    studentClass: string;
+    ageGroup: string;
+} {
+    return {
+        id: value.id,
+        tShirtShortsSize: value.tShirtShortsSize,
+        studentName: value.studentName,
+        dobMonth: value.dobMonth,
+        dobDate: value.dobDate,
+        food: value.food,
+        game: value.game,
+        dobYear: value.dobYear,
+        mobileNo: value.mobileNo,
+        blazerSize: value.blazerSize,
+        shoeSize: value.shoeSize,
+        motherName: value.motherName,
+        photoUrl: record_opt_to_undefined(from_candid_opt_n4(_uploadFile, _downloadFile, value.photoUrl)),
+        admissionNumber: value.admissionNumber,
+        fatherName: value.fatherName,
+        gender: value.gender,
+        timestamp: value.timestamp,
+        trackSuitSize: value.trackSuitSize,
+        studentClass: value.studentClass,
+        ageGroup: value.ageGroup
+    };
+}
+function from_candid_vec_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Registration>): Array<Registration> {
+    return value.map((x)=>from_candid_Registration_n2(_uploadFile, _downloadFile, x));
+}
+function to_candid_RegistrationInput_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: RegistrationInput): _RegistrationInput {
+    return to_candid_record_n7(_uploadFile, _downloadFile, value);
+}
+function to_candid_record_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    tShirtShortsSize: string;
+    studentName: string;
+    dobMonth: bigint;
+    dobDate: bigint;
+    food: string;
+    game: string;
+    dobYear: bigint;
+    mobileNo: string;
+    blazerSize: string;
+    shoeSize: string;
+    motherName: string;
+    photoUrl?: string;
+    admissionNumber: string;
+    fatherName: string;
+    gender: string;
+    trackSuitSize: string;
+    studentClass: string;
+    ageGroup: string;
+}): {
+    tShirtShortsSize: string;
+    studentName: string;
+    dobMonth: bigint;
+    dobDate: bigint;
+    food: string;
+    game: string;
+    dobYear: bigint;
+    mobileNo: string;
+    blazerSize: string;
+    shoeSize: string;
+    motherName: string;
+    photoUrl: [] | [string];
+    admissionNumber: string;
+    fatherName: string;
+    gender: string;
+    trackSuitSize: string;
+    studentClass: string;
+    ageGroup: string;
+} {
+    return {
+        tShirtShortsSize: value.tShirtShortsSize,
+        studentName: value.studentName,
+        dobMonth: value.dobMonth,
+        dobDate: value.dobDate,
+        food: value.food,
+        game: value.game,
+        dobYear: value.dobYear,
+        mobileNo: value.mobileNo,
+        blazerSize: value.blazerSize,
+        shoeSize: value.shoeSize,
+        motherName: value.motherName,
+        photoUrl: value.photoUrl ? candid_some(value.photoUrl) : candid_none(),
+        admissionNumber: value.admissionNumber,
+        fatherName: value.fatherName,
+        gender: value.gender,
+        trackSuitSize: value.trackSuitSize,
+        studentClass: value.studentClass,
+        ageGroup: value.ageGroup
+    };
 }
 export interface CreateActorOptions {
     agent?: Agent;

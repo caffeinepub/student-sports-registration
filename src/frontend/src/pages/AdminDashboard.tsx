@@ -90,6 +90,7 @@ interface EditForm {
   trackSuitSize: string;
   blazerSize: string;
   food: string;
+  photoUrl?: string;
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -212,6 +213,7 @@ function toEditForm(reg: Registration): EditForm {
     trackSuitSize: reg.trackSuitSize,
     blazerSize: reg.blazerSize,
     food: reg.food,
+    photoUrl: reg.photoUrl,
   };
 }
 
@@ -287,6 +289,7 @@ export default function AdminDashboard({ onBack }: Props) {
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<bigint | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -387,6 +390,7 @@ export default function AdminDashboard({ onBack }: Props) {
         trackSuitSize: editForm.trackSuitSize,
         blazerSize: editForm.blazerSize,
         food: editForm.food,
+        ...(editForm.photoUrl ? { photoUrl: editForm.photoUrl } : {}),
       };
       const success = await actor.updateRegistration(editing.id, input);
       if (success) {
@@ -616,6 +620,9 @@ export default function AdminDashboard({ onBack }: Props) {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-accent/50">
+                      <TableHead className="font-bold uppercase text-xs tracking-wider w-14">
+                        Photo
+                      </TableHead>
                       <TableHead className="font-bold uppercase text-xs tracking-wider">
                         ID
                       </TableHead>
@@ -648,7 +655,7 @@ export default function AdminDashboard({ onBack }: Props) {
                         {/* Game header */}
                         <TableRow key={`game-${gameGroup.gameName}`}>
                           <TableCell
-                            colSpan={8}
+                            colSpan={9}
                             className="bg-primary/15 text-primary font-bold text-sm uppercase tracking-wider py-2.5 px-4"
                           >
                             🏅 {gameGroup.gameName} &mdash; {gameGroup.total}{" "}
@@ -662,7 +669,7 @@ export default function AdminDashboard({ onBack }: Props) {
                               key={`gender-${gameGroup.gameName}-${genderGroup.gender}`}
                             >
                               <TableCell
-                                colSpan={8}
+                                colSpan={9}
                                 className={`font-bold text-xs uppercase tracking-wider py-1.5 px-6 ${
                                   genderGroup.gender === "B"
                                     ? "bg-blue-100 text-blue-800 border-l-4 border-blue-500"
@@ -680,7 +687,7 @@ export default function AdminDashboard({ onBack }: Props) {
                                   key={`age-${gameGroup.gameName}-${genderGroup.gender}-${ageSubGroup.ageGroup}`}
                                 >
                                   <TableCell
-                                    colSpan={8}
+                                    colSpan={9}
                                     className={`text-xs font-semibold uppercase tracking-wider py-1 px-10 ${
                                       genderGroup.gender === "B"
                                         ? "bg-blue-50 text-blue-700"
@@ -706,6 +713,44 @@ export default function AdminDashboard({ onBack }: Props) {
                                       onClick={() => setSelected(reg)}
                                       data-ocid={`admin.row.item.${idx}`}
                                     >
+                                      <TableCell className="w-14 py-2">
+                                        {reg.photoUrl ? (
+                                          <button
+                                            type="button"
+                                            aria-label="View full photo"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setLightboxUrl(reg.photoUrl!);
+                                            }}
+                                            className="block rounded-full overflow-hidden w-12 h-12 border-2 border-border hover:border-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                          >
+                                            <img
+                                              src={reg.photoUrl}
+                                              alt={`${reg.studentName} portrait`}
+                                              loading="lazy"
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </button>
+                                        ) : (
+                                          <div
+                                            className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                              genderGroup.gender === "B"
+                                                ? "bg-blue-200"
+                                                : "bg-pink-200"
+                                            }`}
+                                          >
+                                            <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              viewBox="0 0 24 24"
+                                              className="w-6 h-6 text-muted-foreground"
+                                              fill="currentColor"
+                                              aria-hidden="true"
+                                            >
+                                              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                                            </svg>
+                                          </div>
+                                        )}
+                                      </TableCell>
                                       <TableCell className="font-mono font-bold text-primary">
                                         #{reg.id.toString()}
                                       </TableCell>
@@ -1188,6 +1233,34 @@ export default function AdminDashboard({ onBack }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Photo Lightbox */}
+      {lightboxUrl && (
+        <button
+          type="button"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm w-full border-0 p-0"
+          onClick={() => setLightboxUrl(null)}
+          aria-label="Close photo viewer"
+        >
+          <div
+            className="relative max-w-lg w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
+            <div className="absolute -top-10 right-0 text-white text-sm font-bold uppercase tracking-wider flex items-center gap-1 pointer-events-none">
+              <span>✕</span>
+              <span>Close</span>
+            </div>
+            <img
+              src={lightboxUrl}
+              alt="Student full size portrait"
+              loading="lazy"
+              className="w-full max-h-[80vh] object-contain rounded-xl shadow-2xl"
+            />
+          </div>
+        </button>
+      )}
 
       <footer className="bg-card border-t border-border mt-10">
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
